@@ -573,6 +573,8 @@ function kapl_build_pdf_index() {
     // Return the count of indexed files
     return count( $pdf_index );
 
+  }
+
 
 // ==========================================================================
 // 6. Index Cache Management (Get/Set JSON Option)
