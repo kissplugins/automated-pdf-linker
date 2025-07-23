@@ -603,11 +603,12 @@ function kapl_build_pdf_index() {
         return strcmp($a['path'], $b['path']);
     });
 
-	// Save the index to the database
-	$update_success = kapl_update_pdf_index( $pdf_index );
+    // Save the index to the database
+    $update_success = kapl_update_pdf_index( $pdf_index );
 
-    if( ! $update_success ) {
-        return new WP_Error('save_error', __('Failed to save the PDF index to the database.', 'kiss-automated-pdf-linker'));
+    if ( ! $update_success ) {
+        kapl_debug_log( 'KAPL: kapl_update_pdf_index returned false during rebuild.' );
+        return new WP_Error( 'save_error', __( 'Failed to save the PDF index to the database.', 'kiss-automated-pdf-linker' ) );
     }
 
 	// Return the count of indexed files
@@ -657,16 +658,32 @@ function kapl_get_pdf_index() {
  * @return bool True on successful update/add, false on failure.
  */
 function kapl_update_pdf_index( array $index_data ) {
-	$index_json = wp_json_encode( $index_data ); // Use wp_json_encode for better compatibility
+    $index_json = wp_json_encode( $index_data ); // Use wp_json_encode for better compatibility
 
-	if ( $index_json === false ) {
-        kapl_debug_log("KAPL: Failed to encode PDF index to JSON.");
-		return false; // Failed to encode
-	}
+    if ( $index_json === false ) {
+        kapl_debug_log( 'KAPL: Failed to encode PDF index to JSON - ' . json_last_error_msg() );
+        return false; // Failed to encode
+    }
 
-	// Use update_option, which handles adding or updating.
+    // Use update_option, which handles adding or updating.
     // Set 'autoload' to 'no' to prevent loading this potentially large option on every page load.
-	return update_option( KAPL_INDEX_OPTION_NAME, $index_json, 'no' );
+    $updated = update_option( KAPL_INDEX_OPTION_NAME, $index_json, 'no' );
+
+    if ( ! $updated ) {
+        // If update_option returns false, check if the value is actually unchanged
+        $existing_json = get_option( KAPL_INDEX_OPTION_NAME );
+        if ( $existing_json === $index_json ) {
+            // No change needed; treat as success but log for clarity
+            kapl_debug_log( 'KAPL: PDF index unchanged. update_option returned false.' );
+            return true;
+        }
+
+        global $wpdb;
+        kapl_debug_log( 'KAPL: update_option failed to save PDF index - ' . $wpdb->last_error );
+        return false;
+    }
+
+    return true;
 }
 
 
