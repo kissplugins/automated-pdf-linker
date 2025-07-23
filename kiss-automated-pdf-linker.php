@@ -3,7 +3,7 @@
  * Plugin Name:       KISS Automated PDF Linker
  * Plugin URI:        https://example.com/plugins/kiss-automated-pdf-linker/
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
- * Version:           2.1.0
+ * Version:           2.1.1
  * Requires at least: 5.2
  * Requires PHP:      7.4  // Increased requirement due to RecursiveDirectoryIterator usage
  * Author:            KISS / Neochrome, Inc.
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ==========================================================================
 
 /** @var string Plugin version. */
-define( 'KAPL_VERSION', '2.1.0' );
+define( 'KAPL_VERSION', '2.1.1' );
 /** @var string Plugin directory path. */
 define( 'KAPL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 /** @var string Plugin directory URL. */
@@ -137,6 +137,23 @@ function kapl_register_settings() {
         'kapl_pdf_matching_section'           // Section ID where field appears
     );
 
+    // Add debugging settings section
+    add_settings_section(
+        'kapl_debug_section',            // Section ID
+        __( 'Debugging', 'kiss-automated-pdf-linker' ), // Section title
+        'kapl_debug_section_callback',   // Callback for section description
+        KAPL_SETTINGS_SLUG               // Page slug where section appears
+    );
+
+    // Add the field for enabling debug logging
+    add_settings_field(
+        'kapl_debug_logging',            // Field ID
+        __( 'Enable debug logging', 'kiss-automated-pdf-linker' ), // Field label
+        'kapl_debug_logging_field_callback', // Callback to render the field
+        KAPL_SETTINGS_SLUG,              // Page slug
+        'kapl_debug_section'             // Section ID where field appears
+    );
+
 	
 }
 
@@ -174,9 +191,12 @@ function kapl_sanitize_settings( $input ) {
     // Sanitize the use_product_title_match checkbox
     $sanitized_input['use_product_title_match'] = isset( $input['use_product_title_match'] ) ? true : false;
 
-	// Add sanitization for future settings here...
+    // Sanitize the debug_logging checkbox
+    $sanitized_input['debug_logging'] = isset( $input['debug_logging'] ) ? true : false;
 
-	return $sanitized_input;
+        // Add sanitization for future settings here...
+
+        return $sanitized_input;
 }
 
 /**
@@ -304,6 +324,38 @@ function kapl_use_product_title_field_callback() {
     <p class="description">
         <?php esc_html_e( 'When enabled, this will attempt to automatically link strain names listed in the \'Strains\' product tab to matching PDF files.', 'kiss-automated-pdf-linker' ); ?>
     </p>
+    <?php
+}
+
+/**
+ * Callback function to render the description for the debugging section.
+ *
+ * @since 2.1.1
+ */
+function kapl_debug_section_callback() {
+    echo '<p>' . esc_html__( 'Toggle debug output to the PHP error log.', 'kiss-automated-pdf-linker' ) . '</p>';
+}
+
+/**
+ * Callback function to render the checkbox for enabling debug logging.
+ *
+ * @since 2.1.1
+ */
+function kapl_debug_logging_field_callback() {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, ['debug_logging' => false] );
+    $debug_logging = isset( $settings['debug_logging'] ) ? (bool) $settings['debug_logging'] : false;
+
+    ?>
+    <label for="kapl_debug_logging">
+        <input
+            type="checkbox"
+            name="<?php echo esc_attr( KAPL_SETTINGS_OPTION_NAME ); ?>[debug_logging]"
+            id="kapl_debug_logging"
+            value="1"
+            <?php checked( $debug_logging, true ); ?>
+        />
+        <?php esc_html_e( 'Write debugging information to the PHP error log.', 'kiss-automated-pdf-linker' ); ?>
+    </label>
     <?php
 }
 
@@ -586,7 +638,7 @@ function kapl_get_pdf_index() {
 
 	if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $index_data ) ) {
         // Log error if JSON is invalid
-        error_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
+        kapl_debug_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
 		return null; // Invalid JSON or not an array
 	}
 
@@ -608,7 +660,7 @@ function kapl_update_pdf_index( array $index_data ) {
 	$index_json = wp_json_encode( $index_data ); // Use wp_json_encode for better compatibility
 
 	if ( $index_json === false ) {
-        error_log("KAPL: Failed to encode PDF index to JSON.");
+        kapl_debug_log("KAPL: Failed to encode PDF index to JSON.");
 		return false; // Failed to encode
 	}
 
@@ -730,6 +782,20 @@ function kapl_shortcode_handler( $atts, $content = null, $tag = '' ) {
 // ==========================================================================
 
 /**
+ * Writes a debug message to the PHP error log when debugging is enabled.
+ *
+ * @since 2.1.1
+ *
+ * @param string $message Message to log.
+ */
+function kapl_debug_log( $message ) {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, ['debug_logging' => false] );
+    if ( isset( $settings['debug_logging'] ) && $settings['debug_logging'] ) {
+        error_log( $message );
+    }
+}
+
+/**
  * Normalizes a filename or product title into a “slug‑style” string so that
  * product titles like
  *   “3.5 Gram THCA Disposable Vape (Limited Run) – Pressure”
@@ -772,7 +838,7 @@ function kapl_normalize_filename( $filename ) {
     // 5 ‑ trim stray leading/trailing dashes.
     $filename = trim( $filename, '-' );
 
-    error_log("KAPL: Normalized filename: " . $filename);
+    kapl_debug_log("KAPL: Normalized filename: " . $filename);
 
     return $filename;
 }
@@ -796,7 +862,8 @@ function kapl_activate() {
         update_option( KAPL_SETTINGS_OPTION_NAME, [
             'selected_directories' => [],
             'link_color' => '#0000FF', // Add default color
-            'use_product_title_match' => false // Add default for new setting
+            'use_product_title_match' => false, // Add default for new setting
+            'debug_logging' => false // Default debug logging setting
         ]);
     }
     // Optionally, clear any old index from previous versions if names were different
