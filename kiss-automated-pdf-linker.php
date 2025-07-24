@@ -3,7 +3,7 @@
  * Plugin Name:       KISS Automated PDF Linker
  * Plugin URI:        https://example.com/plugins/kiss-automated-pdf-linker/
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
- * Version:           2.1.0
+ * Version:           2.0.0
  * Requires at least: 5.2
  * Requires PHP:      7.4  // Increased requirement due to RecursiveDirectoryIterator usage
  * Author:            KISS / Neochrome, Inc.
@@ -12,12 +12,25 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       kiss-automated-pdf-linker
  * Domain Path:       /languages
+ * GitHub Plugin URI: https://github.com/kissplugins/automated-pdf-linker
+ * GitHub Branch: main
  */
 
 // Exit if accessed directly to prevent direct execution.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// Include the Plugin Update Checker
+require plugin_dir_path(__FILE__) . 'lib/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+    'https://github.com/kissplugins/automated-pdf-linker',
+    __FILE__,
+    'kiss-automated-pdf-linker'
+);
+// Optional: Set the branch that contains the stable release.
+$myUpdateChecker->setBranch('main');
 
 // ==========================================================================
 // 1. Plugin Constants
