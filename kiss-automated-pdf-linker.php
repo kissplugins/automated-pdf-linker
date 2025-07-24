@@ -12,12 +12,25 @@
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       kiss-automated-pdf-linker
  * Domain Path:       /languages
+ * GitHub Plugin URI: https://github.com/kissplugins/automated-pdf-linker
+ * GitHub Branch: main
  */
 
 // Exit if accessed directly to prevent direct execution.
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+// Include the Plugin Update Checker
+require plugin_dir_path(__FILE__) . 'lib/plugin-update-checker/plugin-update-checker.php';
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+$myUpdateChecker = PucFactory::buildUpdateChecker(
+    'https://github.com/kissplugins/automated-pdf-linker',
+    __FILE__,
+    'kiss-automated-pdf-linker'
+);
+// Optional: Set the branch that contains the stable release.
+$myUpdateChecker->setBranch('main');
 
 // ==========================================================================
 // 1. Plugin Constants
