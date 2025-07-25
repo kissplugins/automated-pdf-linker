@@ -3,7 +3,7 @@
  * Plugin Name:       KISS Automated PDF Linker
  * Plugin URI:        https://example.com/plugins/kiss-automated-pdf-linker/
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
- * Version:           2.1.0
+ * Version:           2.1.1
  * Requires at least: 5.2
  * Requires PHP:      7.4  // Increased requirement due to RecursiveDirectoryIterator usage
  * Author:            KISS / Neochrome, Inc.
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 // ==========================================================================
 
 /** @var string Plugin version. */
-define( 'KAPL_VERSION', '2.1.0' );
+define( 'KAPL_VERSION', '2.1.1' );
 /** @var string Plugin directory path. */
 define( 'KAPL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 /** @var string Plugin directory URL. */
@@ -39,6 +39,8 @@ define( 'KAPL_SIMILARITY_THRESHOLD', 50 );
 define( 'KAPL_SHORTCODE_TAG', 'kiss_pdf' );
 /** @var string The slug for the settings page. */
 define( 'KAPL_SETTINGS_SLUG', 'kiss-pdf-linker-settings' );
+/** @var string File path for storing PDF index as fallback when DB fails. */
+define( 'KAPL_INDEX_FILE_PATH', KAPL_PLUGIN_DIR . 'pdf-index.json' );
 
 
 // ==========================================================================
@@ -137,6 +139,23 @@ function kapl_register_settings() {
         'kapl_pdf_matching_section'           // Section ID where field appears
     );
 
+    // Add debugging settings section
+    add_settings_section(
+        'kapl_debug_section',            // Section ID
+        __( 'Debugging', 'kiss-automated-pdf-linker' ), // Section title
+        'kapl_debug_section_callback',   // Callback for section description
+        KAPL_SETTINGS_SLUG               // Page slug where section appears
+    );
+
+    // Add the field for enabling debug logging
+    add_settings_field(
+        'kapl_debug_logging',            // Field ID
+        __( 'Enable debug logging', 'kiss-automated-pdf-linker' ), // Field label
+        'kapl_debug_logging_field_callback', // Callback to render the field
+        KAPL_SETTINGS_SLUG,              // Page slug
+        'kapl_debug_section'             // Section ID where field appears
+    );
+
 	
 }
 
@@ -174,9 +193,12 @@ function kapl_sanitize_settings( $input ) {
     // Sanitize the use_product_title_match checkbox
     $sanitized_input['use_product_title_match'] = isset( $input['use_product_title_match'] ) ? true : false;
 
-	// Add sanitization for future settings here...
+    // Sanitize the debug_logging checkbox
+    $sanitized_input['debug_logging'] = isset( $input['debug_logging'] ) ? true : false;
 
-	return $sanitized_input;
+        // Add sanitization for future settings here...
+
+        return $sanitized_input;
 }
 
 /**
@@ -308,6 +330,38 @@ function kapl_use_product_title_field_callback() {
 }
 
 /**
+ * Callback function to render the description for the debugging section.
+ *
+ * @since 2.1.1
+ */
+function kapl_debug_section_callback() {
+    echo '<p>' . esc_html__( 'Toggle debug output to the PHP error log.', 'kiss-automated-pdf-linker' ) . '</p>';
+}
+
+/**
+ * Callback function to render the checkbox for enabling debug logging.
+ *
+ * @since 2.1.1
+ */
+function kapl_debug_logging_field_callback() {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, ['debug_logging' => false] );
+    $debug_logging = isset( $settings['debug_logging'] ) ? (bool) $settings['debug_logging'] : false;
+
+    ?>
+    <label for="kapl_debug_logging">
+        <input
+            type="checkbox"
+            name="<?php echo esc_attr( KAPL_SETTINGS_OPTION_NAME ); ?>[debug_logging]"
+            id="kapl_debug_logging"
+            value="1"
+            <?php checked( $debug_logging, true ); ?>
+        />
+        <?php esc_html_e( 'Write debugging information to the PHP error log.', 'kiss-automated-pdf-linker' ); ?>
+    </label>
+    <?php
+}
+
+/**
  * Enqueues scripts needed for the color picker on the admin side.
  *
  * @since 2.0.0
@@ -420,7 +474,8 @@ function kapl_settings_page_html() {
             add_settings_error( 'kapl_rebuild_status', 'rebuild_success', $rebuild_message, 'updated' );
         } else {
             // Display error message from WP_Error
-             add_settings_error( 'kapl_rebuild_status', 'rebuild_error', esc_html__( 'Error rebuilding index: ', 'kiss-automated-pdf-linker' ) . $result->get_error_message(), 'error' );
+            add_settings_error( 'kapl_rebuild_status', 'rebuild_error', esc_html__( 'Error rebuilding index: ', 'kiss-automated-pdf-linker' ) . $result->get_error_message(), 'error' );
+            kapl_debug_log( 'KAPL: Error rebuilding index - ' . $result->get_error_message() );
         }
     }
 
@@ -577,16 +632,48 @@ function kapl_build_pdf_index() {
  * @return array|null An array containing the index data, or null if the option doesn't exist or JSON is invalid.
  */
 function kapl_get_pdf_index() {
+    // Check if we're using file-based storage
+    $is_file_storage = get_option( KAPL_INDEX_OPTION_NAME . '_file_storage', false );
+    
+    if ( $is_file_storage ) {
+        kapl_debug_log("KAPL: Using file-based storage for PDF index.");
+        return kapl_load_index_from_file();
+    }
+
 	$index_json = get_option( KAPL_INDEX_OPTION_NAME, null );
 	if ( $index_json === null ) {
-		return null; // Option doesn't exist
+        // If no database option, try file storage as fallback
+        kapl_debug_log("KAPL: No database option found, trying file storage.");
+        return kapl_load_index_from_file();
 	}
+
+    // Check if data is compressed
+    $is_compressed = get_option( KAPL_INDEX_OPTION_NAME . '_compressed', false );
+    
+    if ( $is_compressed ) {
+        kapl_debug_log("KAPL: Loading compressed PDF index.");
+        
+        // Decode base64 and decompress
+        $compressed_data = base64_decode( $index_json );
+        if ( $compressed_data === false ) {
+            kapl_debug_log("KAPL: Failed to base64 decode compressed index.");
+            return null;
+        }
+        
+        $index_json = gzuncompress( $compressed_data );
+        if ( $index_json === false ) {
+            kapl_debug_log("KAPL: Failed to decompress PDF index.");
+            return null;
+        }
+        
+        kapl_debug_log("KAPL: Successfully decompressed PDF index.");
+    }
 
 	$index_data = json_decode( $index_json, true ); // Decode as associative array
 
 	if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $index_data ) ) {
         // Log error if JSON is invalid
-        error_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
+        kapl_debug_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
 		return null; // Invalid JSON or not an array
 	}
 
@@ -605,16 +692,138 @@ function kapl_get_pdf_index() {
  * @return bool True on successful update/add, false on failure.
  */
 function kapl_update_pdf_index( array $index_data ) {
+    kapl_debug_log("KAPL: Updating PDF index with " . count($index_data) . " items.");
+    
 	$index_json = wp_json_encode( $index_data ); // Use wp_json_encode for better compatibility
 
 	if ( $index_json === false ) {
-        error_log("KAPL: Failed to encode PDF index to JSON.");
+        kapl_debug_log("KAPL: Failed to encode PDF index to JSON.");
 		return false; // Failed to encode
 	}
 
+    // Log the size of the JSON data
+    $json_size = strlen( $index_json );
+    kapl_debug_log("KAPL: JSON data size: " . $json_size . " bytes (" . round($json_size / 1024, 2) . " KB)");
+    
+    // Check if the JSON is too large (WordPress typically has issues with options > 1MB)
+    if ( $json_size > 1000000 ) { // 1MB limit
+        kapl_debug_log("KAPL: JSON data too large (" . round($json_size / 1024 / 1024, 2) . " MB), attempting to compress.");
+        
+        // Try to compress the data
+        $compressed_data = gzcompress( $index_json, 6 );
+        if ( $compressed_data !== false ) {
+            $compressed_size = strlen( $compressed_data );
+            kapl_debug_log("KAPL: Compressed size: " . $compressed_size . " bytes (" . round($compressed_size / 1024, 2) . " KB)");
+            
+            // Store compressed data with a flag
+            global $wpdb;
+            $wpdb->show_errors(); // Enable MySQL error reporting
+            
+            $result = update_option( KAPL_INDEX_OPTION_NAME, base64_encode( $compressed_data ), 'no' );
+            if ( $result ) {
+                update_option( KAPL_INDEX_OPTION_NAME . '_compressed', true, 'no' );
+                kapl_debug_log("KAPL: Successfully saved compressed PDF index.");
+                return true;
+            } else {
+                kapl_debug_log("KAPL: Failed to save compressed PDF index.");
+                // Log WordPress and MySQL errors for compressed data
+                if ( $wpdb->last_error ) {
+                    kapl_debug_log("KAPL: MySQL Error (compressed): " . $wpdb->last_error);
+                }
+                kapl_debug_log("KAPL: WordPress last query (compressed): " . $wpdb->last_query);
+                return false;
+            }
+        } else {
+            kapl_debug_log("KAPL: Failed to compress PDF index data.");
+            return false;
+        }
+    }
+
 	// Use update_option, which handles adding or updating.
     // Set 'autoload' to 'no' to prevent loading this potentially large option on every page load.
-	return update_option( KAPL_INDEX_OPTION_NAME, $index_json, 'no' );
+    global $wpdb;
+    $wpdb->show_errors(); // Enable MySQL error reporting
+    
+    $result = update_option( KAPL_INDEX_OPTION_NAME, $index_json, 'no' );
+    if ( $result ) {
+        // Remove compression flag if it exists
+        delete_option( KAPL_INDEX_OPTION_NAME . '_compressed' );
+        kapl_debug_log("KAPL: Successfully saved PDF index.");
+    } else {
+        kapl_debug_log("KAPL: Failed to save PDF index to database.");
+        // Log WordPress and MySQL errors
+        if ( $wpdb->last_error ) {
+            kapl_debug_log("KAPL: MySQL Error: " . $wpdb->last_error);
+        }
+        kapl_debug_log("KAPL: WordPress last query: " . $wpdb->last_query);
+        
+        // Try file-based storage as final fallback
+        kapl_debug_log("KAPL: Attempting file-based storage as fallback.");
+        if ( kapl_save_index_to_file( $index_data ) ) {
+            kapl_debug_log("KAPL: Successfully saved PDF index to file.");
+            // Mark that we're using file storage
+            update_option( KAPL_INDEX_OPTION_NAME . '_file_storage', true, 'no' );
+            return true;
+        } else {
+            kapl_debug_log("KAPL: File-based storage also failed.");
+        }
+    }
+    
+	return $result;
+}
+
+/**
+ * Saves the PDF index to a file as fallback storage.
+ *
+ * @since 2.1.1
+ *
+ * @param array $index_data The array containing the PDF index data.
+ * @return bool True on successful save, false on failure.
+ */
+function kapl_save_index_to_file( array $index_data ) {
+    $json_data = wp_json_encode( $index_data );
+    if ( $json_data === false ) {
+        kapl_debug_log("KAPL: Failed to encode index data for file storage.");
+        return false;
+    }
+    
+    $bytes_written = file_put_contents( KAPL_INDEX_FILE_PATH, $json_data, LOCK_EX );
+    if ( $bytes_written === false ) {
+        kapl_debug_log("KAPL: Failed to write index file to: " . KAPL_INDEX_FILE_PATH);
+        return false;
+    }
+    
+    kapl_debug_log("KAPL: Wrote " . $bytes_written . " bytes to index file.");
+    return true;
+}
+
+/**
+ * Loads the PDF index from file storage.
+ *
+ * @since 2.1.1
+ *
+ * @return array|null The index data or null on failure.
+ */
+function kapl_load_index_from_file() {
+    if ( ! file_exists( KAPL_INDEX_FILE_PATH ) || ! is_readable( KAPL_INDEX_FILE_PATH ) ) {
+        kapl_debug_log("KAPL: Index file does not exist or is not readable: " . KAPL_INDEX_FILE_PATH);
+        return null;
+    }
+    
+    $json_data = file_get_contents( KAPL_INDEX_FILE_PATH );
+    if ( $json_data === false ) {
+        kapl_debug_log("KAPL: Failed to read index file: " . KAPL_INDEX_FILE_PATH);
+        return null;
+    }
+    
+    $index_data = json_decode( $json_data, true );
+    if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $index_data ) ) {
+        kapl_debug_log("KAPL: Failed to decode JSON from index file: " . json_last_error_msg());
+        return null;
+    }
+    
+    kapl_debug_log("KAPL: Successfully loaded " . count( $index_data ) . " items from index file.");
+    return $index_data;
 }
 
 
@@ -730,6 +939,20 @@ function kapl_shortcode_handler( $atts, $content = null, $tag = '' ) {
 // ==========================================================================
 
 /**
+ * Writes a debug message to the PHP error log when debugging is enabled.
+ *
+ * @since 2.1.1
+ *
+ * @param string $message Message to log.
+ */
+function kapl_debug_log( $message ) {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, ['debug_logging' => false] );
+    if ( isset( $settings['debug_logging'] ) && $settings['debug_logging'] ) {
+        error_log( $message );
+    }
+}
+
+/**
  * Normalizes a filename or product title into a “slug‑style” string so that
  * product titles like
  *   “3.5 Gram THCA Disposable Vape (Limited Run) – Pressure”
@@ -772,7 +995,7 @@ function kapl_normalize_filename( $filename ) {
     // 5 ‑ trim stray leading/trailing dashes.
     $filename = trim( $filename, '-' );
 
-    error_log("KAPL: Normalized filename: " . $filename);
+    kapl_debug_log("KAPL: Normalized filename: " . $filename);
 
     return $filename;
 }
@@ -796,7 +1019,8 @@ function kapl_activate() {
         update_option( KAPL_SETTINGS_OPTION_NAME, [
             'selected_directories' => [],
             'link_color' => '#0000FF', // Add default color
-            'use_product_title_match' => false // Add default for new setting
+            'use_product_title_match' => false, // Add default for new setting
+            'debug_logging' => false // Default debug logging setting
         ]);
     }
     // Optionally, clear any old index from previous versions if names were different
