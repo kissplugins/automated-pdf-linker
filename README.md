@@ -1,7 +1,6 @@
 # KISS Automated PDF Linker
 
-**Contributors:** (Your Name or Company)
-**Donate link:** <https://example.com/donate>
+**Contributors:** KISS Plugins
 **Tags:** pdf, shortcode, link, automatic, files, uploads, index, search, fuzzy
 **Requires at least:** 5.2
 **Tested up to:** 6.5
