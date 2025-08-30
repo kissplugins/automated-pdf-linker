@@ -405,13 +405,66 @@ class Settings {
      * @return void
      */
     private function render_selftest_results(): void {
-        // Import the SelfTest class
-        $plugin = \KissPlugins\AutomatedPdfLinker\Core\Plugin::get_instance();
-        $self_test = new \KissPlugins\AutomatedPdfLinker\Admin\SelfTest( $plugin );
+        ?>
+        <div class="kapl-selftest-debug">
+            <h4><?php \esc_html_e( 'Self-Test Debug Information', 'kiss-automated-pdf-linker' ); ?></h4>
+            <?php
 
-        $results = $self_test->run_all_tests();
-        $summary = $self_test->get_test_summary();
+            // Debug: Check if classes exist
+            echo '<p><strong>Debug Info:</strong></p>';
+            echo '<ul>';
+            echo '<li>Plugin class exists: ' . (class_exists('\KissPlugins\AutomatedPdfLinker\Core\Plugin') ? '✅ Yes' : '❌ No') . '</li>';
+            echo '<li>SelfTest class exists: ' . (class_exists('\KissPlugins\AutomatedPdfLinker\Admin\SelfTest') ? '✅ Yes' : '❌ No') . '</li>';
+            echo '<li>Autoloader file exists: ' . (file_exists(plugin_dir_path(__FILE__) . '../../vendor/autoload.php') ? '✅ Yes' : '❌ No') . '</li>';
+            echo '<li>Current file path: ' . __FILE__ . '</li>';
+            echo '<li>Plugin dir path: ' . plugin_dir_path(__FILE__) . '</li>';
+            echo '</ul>';
 
+            try {
+                // Try to get plugin instance
+                $plugin = \KissPlugins\AutomatedPdfLinker\Core\Plugin::get_instance();
+                echo '<p>✅ Plugin instance retrieved successfully</p>';
+
+                // Try to create SelfTest instance
+                $self_test = new \KissPlugins\AutomatedPdfLinker\Admin\SelfTest( $plugin );
+                echo '<p>✅ SelfTest instance created successfully</p>';
+
+                // Try to run tests
+                $results = $self_test->run_all_tests();
+                $summary = $self_test->get_test_summary();
+                echo '<p>✅ Tests executed successfully</p>';
+
+                $this->render_test_results($results, $summary);
+
+            } catch ( \Exception $e ) {
+                echo '<div style="color: red; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
+                echo '<strong>❌ Self-Test Error:</strong><br>';
+                echo 'Error: ' . esc_html( $e->getMessage() ) . '<br>';
+                echo 'File: ' . esc_html( $e->getFile() ) . '<br>';
+                echo 'Line: ' . esc_html( $e->getLine() ) . '<br>';
+                echo '<details><summary>Stack Trace</summary><pre>' . esc_html( $e->getTraceAsString() ) . '</pre></details>';
+                echo '</div>';
+            } catch ( \Error $e ) {
+                echo '<div style="color: red; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
+                echo '<strong>❌ Fatal Error:</strong><br>';
+                echo 'Error: ' . esc_html( $e->getMessage() ) . '<br>';
+                echo 'File: ' . esc_html( $e->getFile() ) . '<br>';
+                echo 'Line: ' . esc_html( $e->getLine() ) . '<br>';
+                echo '</div>';
+            }
+            ?>
+        </div>
+        <?php
+    }
+
+    /**
+     * Render the actual test results.
+     *
+     * @param array $results Test results.
+     * @param array $summary Test summary.
+     * @return void
+     */
+    private function render_test_results(array $results, array $summary): void {
         ?>
         <div class="kapl-selftest-results">
             <h4><?php \esc_html_e( 'Self-Test Results', 'kiss-automated-pdf-linker' ); ?></h4>

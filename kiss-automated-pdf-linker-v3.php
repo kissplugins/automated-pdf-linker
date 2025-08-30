@@ -1,24 +1,35 @@
 <?php
 /**
  * Plugin Name:       KISS Automated PDF Linker
- * Plugin URI:        https://example.com/plugins/kiss-automated-pdf-linker/
+ * Plugin URI:        https://github.com/kissplugins/KISS-automated-pdf-linker
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
  * Version:           3.0.0
  * Requires at least: 5.2
  * Requires PHP:      7.4
  * Author:            KISS / Neochrome, Inc.
- * Author URI:        https://example.com/
+ * Author URI:        https://KISSplugins.com
  * License:           GPL v2 or later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain:       kiss-automated-pdf-linker
  * Domain Path:       /languages
- * GitHub Plugin URI: https://github.com/kissplugins/automated-pdf-linker
+ * GitHub Plugin URI: https://github.com/kissplugins/KISS-automated-pdf-linker
  * GitHub Branch: main
  */
 
 // Exit if accessed directly to prevent direct execution.
 if ( ! defined( 'ABSPATH' ) ) {
     exit;
+}
+
+// Check for version conflicts
+if ( defined( 'KAPL_VERSION' ) && version_compare( KAPL_VERSION, '3.0.0', '<' ) ) {
+    add_action( 'admin_notices', function() {
+        echo '<div class="notice notice-error"><p>';
+        echo '<strong>KISS Automated PDF Linker:</strong> ';
+        echo 'Version conflict detected! Please deactivate the old version (v' . KAPL_VERSION . ') before using v3.0.0.';
+        echo '</p></div>';
+    } );
+    return; // Stop loading v3
 }
 
 // Include Composer autoloader
