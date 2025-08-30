@@ -34,12 +34,12 @@ class AdminMenu {
     }
 
     /**
-     * Add admin menu item under the 'Settings' menu.
+     * Add admin menu item under the 'Tools' menu.
      *
      * @return void
      */
     public function add_admin_menu(): void {
-        \add_options_page(
+        \add_management_page(
             \__( 'KISS PDF Linker Settings', 'kiss-automated-pdf-linker' ),
             \__( 'KISS PDF Linker', 'kiss-automated-pdf-linker' ),
             'manage_options',
@@ -96,8 +96,18 @@ class AdminMenu {
 
             <hr>
 
-            <h2><?php \esc_html_e( 'System Diagnostics', 'kiss-automated-pdf-linker' ); ?></h2>
-            <p><?php \esc_html_e( 'The self-test section above provides comprehensive diagnostic tests to verify plugin functionality.', 'kiss-automated-pdf-linker' ); ?></p>
+            <h2><?php \esc_html_e( 'System Self-Tests', 'kiss-automated-pdf-linker' ); ?></h2>
+            <p><?php \esc_html_e( 'Run diagnostic tests to verify plugin functionality and catch potential issues.', 'kiss-automated-pdf-linker' ); ?></p>
+
+            <p>
+                <strong><?php \esc_html_e( 'Run Diagnostic Tests:', 'kiss-automated-pdf-linker' ); ?></strong>
+                <a href="<?php echo \esc_url( \admin_url( 'tools.php?page=kapl-self-test' ) ); ?>" class="button button-secondary">
+                    <?php \esc_html_e( 'Link to new page', 'kiss-automated-pdf-linker' ); ?>
+                </a>
+            </p>
+            <p class="description">
+                <?php \esc_html_e( 'Click to run comprehensive diagnostic tests. This will verify that all plugin components are working correctly.', 'kiss-automated-pdf-linker' ); ?>
+            </p>
 
         </div>
         <?php

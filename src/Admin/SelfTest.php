@@ -55,6 +55,7 @@ class SelfTest {
         // Core functionality tests
         $this->test_plugin_initialization();
         $this->test_autoloader();
+        $this->test_dependency_injection();
         $this->test_settings_access();
         
         // Service tests
@@ -127,6 +128,60 @@ class SelfTest {
             }
         } catch ( \Exception $e ) {
             $this->add_test_result( $test_name, false, 'Autoloader test failed: ' . $e->getMessage() );
+        }
+    }
+
+    /**
+     * Test dependency injection container.
+     *
+     * @return void
+     */
+    private function test_dependency_injection(): void {
+        $test_name = 'Dependency Injection Container';
+
+        try {
+            $container = $this->plugin->get_container();
+
+            if ( null === $container ) {
+                $this->add_test_result( $test_name, false, 'Container not initialized.' );
+                return;
+            }
+
+            // Test basic container functionality
+            $test_services = [
+                'logger' => 'Logger service',
+                'cache_manager' => 'Cache Manager service',
+                'index_builder' => 'Index Builder service',
+                'settings' => 'Settings service',
+            ];
+
+            $available_services = [];
+            $missing_services = [];
+
+            foreach ( $test_services as $service_id => $description ) {
+                if ( $container->has( $service_id ) ) {
+                    $available_services[] = $description;
+                } else {
+                    $missing_services[] = $description;
+                }
+            }
+
+            if ( empty( $missing_services ) ) {
+                $this->add_test_result(
+                    $test_name,
+                    true,
+                    'Container initialized with ' . count( $available_services ) . ' core services.'
+                );
+            } else {
+                $this->add_test_result(
+                    $test_name,
+                    false,
+                    'Missing services: ' . implode( ', ', $missing_services )
+                );
+            }
+
+        } catch ( \Exception $e ) {
+            $this->add_test_result( $test_name, false, 'Container test failed: ' . $e->getMessage() );
         }
     }
 

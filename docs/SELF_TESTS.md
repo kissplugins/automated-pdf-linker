@@ -6,10 +6,12 @@ Version 3.0.0 introduces a comprehensive on-screen self-test system designed to 
 
 ## Accessing Self-Tests
 
-1. Navigate to **Settings → KISS PDF Linker** in your WordPress admin
-2. Scroll down to the **System Self-Tests** section
-3. Click **"Run Self-Tests"** to execute all diagnostic tests
-4. Review the results for any issues or failures
+1. Navigate to **Tools → KISS PDF Self-Tests** in your WordPress admin
+2. Review the debug information at the top of the page
+3. Click **"🚀 Run All Self-Tests"** to execute all diagnostic tests
+4. Review the detailed results for any issues or failures
+
+**Note:** The main plugin settings are also available under **Tools → KISS PDF Linker** for easy access.
 
 ## Test Categories
 
