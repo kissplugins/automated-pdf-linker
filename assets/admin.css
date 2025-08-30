@@ -1,0 +1,92 @@
+/**
+ * Admin Styles for KISS Automated PDF Linker
+ *
+ * @package KissPlugins\AutomatedPdfLinker
+ * @since 3.0.0
+ */
+
+/* Self-Test Results Styling */
+.kapl-selftest-results {
+    margin-top: 15px;
+}
+
+.kapl-test-summary {
+    margin-bottom: 20px;
+    padding: 10px;
+    border-left: 4px solid #46b450;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+.kapl-test-summary.has-failures {
+    border-left-color: #dc3232;
+}
+
+.kapl-test-details {
+    margin-bottom: 15px;
+}
+
+.kapl-test-result {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-left: 3px solid #46b450;
+    background: #f0f8f0;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.kapl-test-result.failed {
+    border-left-color: #dc3232;
+    background: #fdf0f0;
+}
+
+.kapl-test-result strong {
+    color: #006600;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kapl-test-result.failed strong {
+    color: #cc0000;
+}
+
+.kapl-test-result .test-message {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Index Status Styling */
+.kapl-index-status {
+    margin-top: 15px;
+}
+
+.kapl-index-status details {
+    margin-top: 10px;
+}
+
+.kapl-index-status summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+.kapl-index-status summary:hover {
+    color: #0073aa;
+}
+
+/* Button Styling */
+.kapl-test-button {
+    margin-right: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+    .kapl-test-result {
+        padding: 10px;
+    }
+    
+    .kapl-test-summary {
+        padding: 12px;
+    }
+}
