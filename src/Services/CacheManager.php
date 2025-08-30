@@ -49,8 +49,23 @@ class CacheManager {
      * @param Logger $logger Logger instance.
      */
     public function __construct( Logger $logger ) {
-        $this->logger     = $logger;
-        $this->plugin_dir = plugin_dir_path( dirname( dirname( __DIR__ ) ) . '/kiss-automated-pdf-linker.php' );
+        $this->logger = $logger;
+
+        // Set plugin directory with fallback
+        if ( function_exists( 'plugin_dir_path' ) ) {
+            // Try to get from WordPress constant first
+            if ( defined( 'KAPL_PLUGIN_DIR' ) ) {
+                $this->plugin_dir = KAPL_PLUGIN_DIR;
+            } else {
+                // Fallback to calculating from current file
+                $this->plugin_dir = plugin_dir_path( dirname( dirname( __DIR__ ) ) . '/kiss-automated-pdf-linker-v3.php' );
+            }
+        } else {
+            // Fallback when WordPress functions aren't available
+            $this->plugin_dir = dirname( dirname( __DIR__ ) ) . '/';
+        }
+
+        $this->logger->debug( 'CacheManager initialized with plugin_dir: ' . $this->plugin_dir );
     }
 
     /**
@@ -59,15 +74,21 @@ class CacheManager {
      * @return array|null PDF index data or null if not found.
      */
     public function get_index(): ?array {
+        // If WordPress functions aren't available, use file storage
+        if ( ! function_exists( 'get_option' ) ) {
+            $this->logger->debug( 'WordPress functions not available, using file storage.' );
+            return $this->load_index_from_file();
+        }
+
         // Check if we're using file-based storage
-        $is_file_storage = get_option( self::INDEX_OPTION_NAME . '_file_storage', false );
-        
+        $is_file_storage = \get_option( self::INDEX_OPTION_NAME . '_file_storage', false );
+
         if ( $is_file_storage ) {
             $this->logger->debug( 'Using file-based storage for PDF index.' );
             return $this->load_index_from_file();
         }
 
-        $index_json = get_option( self::INDEX_OPTION_NAME, null );
+        $index_json = \get_option( self::INDEX_OPTION_NAME, null );
         if ( null === $index_json ) {
             // If no database option, try file storage as fallback
             $this->logger->debug( 'No database option found, trying file storage.' );
@@ -75,8 +96,8 @@ class CacheManager {
         }
 
         // Check if data is compressed
-        $is_compressed = get_option( self::INDEX_OPTION_NAME . '_compressed', false );
-        
+        $is_compressed = \get_option( self::INDEX_OPTION_NAME . '_compressed', false );
+
         if ( $is_compressed ) {
             return $this->decompress_index( $index_json );
         }
@@ -92,8 +113,13 @@ class CacheManager {
      */
     public function update_index( array $index_data ): bool {
         $this->logger->debug( 'Updating PDF index with ' . count( $index_data ) . ' items.' );
-        
-        $index_json = wp_json_encode( $index_data );
+
+        // Use WordPress JSON encoding if available, otherwise use PHP's json_encode
+        if ( function_exists( 'wp_json_encode' ) ) {
+            $index_json = \wp_json_encode( $index_data );
+        } else {
+            $index_json = \json_encode( $index_data );
+        }
 
         if ( false === $index_json ) {
             $this->logger->error( 'Failed to encode PDF index to JSON.' );
@@ -102,7 +128,13 @@ class CacheManager {
 
         $json_size = strlen( $index_json );
         $this->logger->debug( "JSON data size: {$json_size} bytes (" . round( $json_size / 1024, 2 ) . ' KB)' );
-        
+
+        // If WordPress functions aren't available, always use file storage
+        if ( ! function_exists( 'update_option' ) ) {
+            $this->logger->debug( 'WordPress functions not available, using file storage.' );
+            return $this->save_index_to_file( $index_data );
+        }
+
         // Check if the JSON is too large (WordPress typically has issues with options > 1MB)
         if ( $json_size > 1000000 ) { // 1MB limit
             return $this->save_compressed_index( $index_json, $index_data );
@@ -117,15 +149,22 @@ class CacheManager {
      * @return bool True on success, false on failure.
      */
     public function clear_index(): bool {
-        $result = delete_option( self::INDEX_OPTION_NAME );
-        delete_option( self::INDEX_OPTION_NAME . '_compressed' );
-        delete_option( self::INDEX_OPTION_NAME . '_file_storage' );
-        
+        $result = true;
+
+        // Clear WordPress options if available
+        if ( function_exists( 'delete_option' ) ) {
+            $result = \delete_option( self::INDEX_OPTION_NAME );
+            \delete_option( self::INDEX_OPTION_NAME . '_compressed' );
+            \delete_option( self::INDEX_OPTION_NAME . '_file_storage' );
+        }
+
+        // Clear file storage
         $file_path = $this->get_index_file_path();
         if ( file_exists( $file_path ) ) {
-            unlink( $file_path );
+            $file_result = unlink( $file_path );
+            $result = $result && $file_result;
         }
-        
+
         $this->logger->info( 'PDF index cleared from cache.' );
         return $result;
     }
@@ -182,24 +221,28 @@ class CacheManager {
      */
     private function save_compressed_index( string $index_json, array $index_data ): bool {
         $this->logger->debug( 'JSON data too large, attempting to compress.' );
-        
+
         $compressed_data = gzcompress( $index_json, 6 );
         if ( false === $compressed_data ) {
             $this->logger->error( 'Failed to compress PDF index data.' );
-            return false;
+            return $this->save_index_to_file( $index_data );
         }
 
         $compressed_size = strlen( $compressed_data );
         $this->logger->debug( "Compressed size: {$compressed_size} bytes (" . round( $compressed_size / 1024, 2 ) . ' KB)' );
-        
-        $result = update_option( self::INDEX_OPTION_NAME, base64_encode( $compressed_data ), 'no' );
-        if ( $result ) {
-            update_option( self::INDEX_OPTION_NAME . '_compressed', true, 'no' );
-            $this->logger->info( 'Successfully saved compressed PDF index.' );
-            return true;
+
+        // Try to save to WordPress options if available
+        if ( function_exists( 'update_option' ) ) {
+            $result = \update_option( self::INDEX_OPTION_NAME, base64_encode( $compressed_data ), 'no' );
+            if ( $result ) {
+                \update_option( self::INDEX_OPTION_NAME . '_compressed', true, 'no' );
+                $this->logger->info( 'Successfully saved compressed PDF index.' );
+                return true;
+            }
+            $this->logger->error( 'Failed to save compressed PDF index to database.' );
         }
 
-        $this->logger->error( 'Failed to save compressed PDF index.' );
+        // Fallback to file storage
         return $this->save_index_to_file( $index_data );
     }
 
@@ -211,15 +254,21 @@ class CacheManager {
      * @return bool True on success, false on failure.
      */
     private function save_uncompressed_index( string $index_json, array $index_data ): bool {
-        $result = update_option( self::INDEX_OPTION_NAME, $index_json, 'no' );
-        if ( $result ) {
-            // Remove compression flag if it exists
-            delete_option( self::INDEX_OPTION_NAME . '_compressed' );
-            $this->logger->info( 'Successfully saved PDF index.' );
-            return true;
+        // Try to save to WordPress options if available
+        if ( function_exists( 'update_option' ) ) {
+            $result = \update_option( self::INDEX_OPTION_NAME, $index_json, 'no' );
+            if ( $result ) {
+                // Remove compression flag if it exists
+                if ( function_exists( 'delete_option' ) ) {
+                    \delete_option( self::INDEX_OPTION_NAME . '_compressed' );
+                }
+                $this->logger->info( 'Successfully saved PDF index.' );
+                return true;
+            }
+            $this->logger->error( 'Failed to save PDF index to database.' );
         }
 
-        $this->logger->error( 'Failed to save PDF index to database.' );
+        // Fallback to file storage
         return $this->save_index_to_file( $index_data );
     }
 
@@ -231,22 +280,33 @@ class CacheManager {
      */
     private function save_index_to_file( array $index_data ): bool {
         $this->logger->debug( 'Attempting file-based storage as fallback.' );
-        
-        $json_data = wp_json_encode( $index_data );
+
+        // Use WordPress JSON encoding if available, otherwise use PHP's json_encode
+        if ( function_exists( 'wp_json_encode' ) ) {
+            $json_data = \wp_json_encode( $index_data );
+        } else {
+            $json_data = \json_encode( $index_data );
+        }
+
         if ( false === $json_data ) {
             $this->logger->error( 'Failed to encode index data for file storage.' );
             return false;
         }
-        
+
         $file_path = $this->get_index_file_path();
         $bytes_written = file_put_contents( $file_path, $json_data, LOCK_EX );
         if ( false === $bytes_written ) {
             $this->logger->error( "Failed to write index file to: {$file_path}" );
             return false;
         }
-        
+
         $this->logger->info( "Wrote {$bytes_written} bytes to index file." );
-        update_option( self::INDEX_OPTION_NAME . '_file_storage', true, 'no' );
+
+        // Set file storage flag if WordPress functions are available
+        if ( function_exists( 'update_option' ) ) {
+            \update_option( self::INDEX_OPTION_NAME . '_file_storage', true, 'no' );
+        }
+
         return true;
     }
 

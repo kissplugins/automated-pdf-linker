@@ -56,6 +56,16 @@ src/
 - Manages service instantiation and dependency injection
 - Coordinates WordPress hook registration
 - Provides access to all plugin services
+- Integrates with advanced DI container system
+
+### Core\Container
+**Responsibility**: Advanced dependency injection container
+- Automatic dependency resolution via reflection
+- Service binding with singleton and instance support
+- Service provider system for organized registration
+- Parameter injection and method calling with DI
+- Alias support for flexible service naming
+- Container clearing for testing environments
 
 ### Services\IndexBuilder
 **Responsibility**: PDF index building and management

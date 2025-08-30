@@ -72,7 +72,6 @@ class Settings {
         $this->register_appearance_section();
         $this->register_matching_section();
         $this->register_debug_section();
-        $this->register_selftest_section();
     }
 
     /**
@@ -163,27 +162,7 @@ class Settings {
         );
     }
 
-    /**
-     * Register self-test section.
-     *
-     * @return void
-     */
-    private function register_selftest_section(): void {
-        \add_settings_section(
-            'kapl_selftest_section',
-            \__( 'System Self-Tests', 'kiss-automated-pdf-linker' ),
-            [ $this, 'selftest_section_callback' ],
-            self::SETTINGS_SLUG
-        );
 
-        \add_settings_field(
-            'kapl_selftest_results',
-            \__( 'Run Diagnostic Tests:', 'kiss-automated-pdf-linker' ),
-            [ $this, 'selftest_field_callback' ],
-            self::SETTINGS_SLUG,
-            'kapl_selftest_section'
-        );
-    }
 
     /**
      * Sanitize settings before saving.
@@ -362,150 +341,9 @@ class Settings {
         <?php
     }
 
-    /**
-     * Self-test section callback.
-     *
-     * @return void
-     */
-    public function selftest_section_callback(): void {
-        echo '<p>' . \esc_html__( 'Run diagnostic tests to verify plugin functionality and catch potential issues.', 'kiss-automated-pdf-linker' ) . '</p>';
-    }
 
-    /**
-     * Self-test field callback.
-     *
-     * @return void
-     */
-    public function selftest_field_callback(): void {
-        // Handle self-test execution
-        $run_tests = isset( $_POST['kapl_run_selftest'] ) && \wp_verify_nonce( \sanitize_key( $_POST['kapl_selftest_nonce'] ?? '' ), 'kapl_selftest_action' );
 
-        ?>
-        <div id="kapl-selftest-container">
-            <?php if ( $run_tests ): ?>
-                <?php $this->render_selftest_results(); ?>
-            <?php else: ?>
-                <form method="post" action="" style="display: inline;">
-                    <?php \wp_nonce_field( 'kapl_selftest_action', 'kapl_selftest_nonce' ); ?>
-                    <button type="submit" name="kapl_run_selftest" class="button button-secondary">
-                        <?php \esc_html_e( 'Run Self-Tests', 'kiss-automated-pdf-linker' ); ?>
-                    </button>
-                </form>
-                <p class="description">
-                    <?php \esc_html_e( 'Click to run comprehensive diagnostic tests. This will verify that all plugin components are working correctly.', 'kiss-automated-pdf-linker' ); ?>
-                </p>
-            <?php endif; ?>
-        </div>
-        <?php
-    }
 
-    /**
-     * Render self-test results.
-     *
-     * @return void
-     */
-    private function render_selftest_results(): void {
-        ?>
-        <div class="kapl-selftest-debug">
-            <h4><?php \esc_html_e( 'Self-Test Debug Information', 'kiss-automated-pdf-linker' ); ?></h4>
-            <?php
-
-            // Debug: Check if classes exist
-            echo '<p><strong>Debug Info:</strong></p>';
-            echo '<ul>';
-            echo '<li>Plugin class exists: ' . (class_exists('\KissPlugins\AutomatedPdfLinker\Core\Plugin') ? '✅ Yes' : '❌ No') . '</li>';
-            echo '<li>SelfTest class exists: ' . (class_exists('\KissPlugins\AutomatedPdfLinker\Admin\SelfTest') ? '✅ Yes' : '❌ No') . '</li>';
-            echo '<li>Autoloader file exists: ' . (file_exists(plugin_dir_path(__FILE__) . '../../vendor/autoload.php') ? '✅ Yes' : '❌ No') . '</li>';
-            echo '<li>Current file path: ' . __FILE__ . '</li>';
-            echo '<li>Plugin dir path: ' . plugin_dir_path(__FILE__) . '</li>';
-            echo '</ul>';
-
-            try {
-                // Try to get plugin instance
-                $plugin = \KissPlugins\AutomatedPdfLinker\Core\Plugin::get_instance();
-                echo '<p>✅ Plugin instance retrieved successfully</p>';
-
-                // Try to create SelfTest instance
-                $self_test = new \KissPlugins\AutomatedPdfLinker\Admin\SelfTest( $plugin );
-                echo '<p>✅ SelfTest instance created successfully</p>';
-
-                // Try to run tests
-                $results = $self_test->run_all_tests();
-                $summary = $self_test->get_test_summary();
-                echo '<p>✅ Tests executed successfully</p>';
-
-                $this->render_test_results($results, $summary);
-
-            } catch ( \Exception $e ) {
-                echo '<div style="color: red; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
-                echo '<strong>❌ Self-Test Error:</strong><br>';
-                echo 'Error: ' . esc_html( $e->getMessage() ) . '<br>';
-                echo 'File: ' . esc_html( $e->getFile() ) . '<br>';
-                echo 'Line: ' . esc_html( $e->getLine() ) . '<br>';
-                echo '<details><summary>Stack Trace</summary><pre>' . esc_html( $e->getTraceAsString() ) . '</pre></details>';
-                echo '</div>';
-            } catch ( \Error $e ) {
-                echo '<div style="color: red; padding: 10px; border: 1px solid red; background: #ffe6e6;">';
-                echo '<strong>❌ Fatal Error:</strong><br>';
-                echo 'Error: ' . esc_html( $e->getMessage() ) . '<br>';
-                echo 'File: ' . esc_html( $e->getFile() ) . '<br>';
-                echo 'Line: ' . esc_html( $e->getLine() ) . '<br>';
-                echo '</div>';
-            }
-            ?>
-        </div>
-        <?php
-    }
-
-    /**
-     * Render the actual test results.
-     *
-     * @param array $results Test results.
-     * @param array $summary Test summary.
-     * @return void
-     */
-    private function render_test_results(array $results, array $summary): void {
-        ?>
-        <div class="kapl-selftest-results">
-            <h4><?php \esc_html_e( 'Self-Test Results', 'kiss-automated-pdf-linker' ); ?></h4>
-
-            <div class="kapl-test-summary" style="margin-bottom: 20px; padding: 10px; border-left: 4px solid <?php echo $summary['failed'] === 0 ? '#46b450' : '#dc3232'; ?>; background: #f9f9f9;">
-                <strong>
-                    <?php
-                    printf(
-                        /* translators: 1: passed tests, 2: total tests, 3: success rate */
-                        \esc_html__( 'Summary: %1$d/%2$d tests passed (%3$s%% success rate)', 'kiss-automated-pdf-linker' ),
-                        $summary['passed'],
-                        $summary['total'],
-                        $summary['success_rate']
-                    );
-                    ?>
-                </strong>
-            </div>
-
-            <div class="kapl-test-details">
-                <?php foreach ( $results as $result ): ?>
-                    <div class="kapl-test-result" style="margin-bottom: 10px; padding: 8px; border-left: 3px solid <?php echo $result['passed'] ? '#46b450' : '#dc3232'; ?>; background: <?php echo $result['passed'] ? '#f0f8f0' : '#fdf0f0'; ?>;">
-                        <strong style="color: <?php echo $result['passed'] ? '#006600' : '#cc0000'; ?>;">
-                            <?php echo $result['passed'] ? '✓' : '✗'; ?> <?php echo \esc_html( $result['name'] ); ?>
-                        </strong>
-                        <br>
-                        <span style="font-size: 0.9em; color: #666;">
-                            <?php echo \esc_html( $result['message'] ); ?>
-                        </span>
-                    </div>
-                <?php endforeach; ?>
-            </div>
-
-            <form method="post" action="" style="margin-top: 15px;">
-                <?php \wp_nonce_field( 'kapl_selftest_action', 'kapl_selftest_nonce' ); ?>
-                <button type="submit" name="kapl_run_selftest" class="button button-secondary">
-                    <?php \esc_html_e( 'Run Tests Again', 'kiss-automated-pdf-linker' ); ?>
-                </button>
-            </form>
-        </div>
-        <?php
-    }
 
     /**
      * Handle index rebuilding if requested.

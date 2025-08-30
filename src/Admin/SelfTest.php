@@ -55,6 +55,7 @@ class SelfTest {
         // Core functionality tests
         $this->test_plugin_initialization();
         $this->test_autoloader();
+        $this->test_dependency_injection();
         $this->test_settings_access();
         
         // Service tests
@@ -131,6 +132,60 @@ class SelfTest {
     }
 
     /**
+     * Test dependency injection container.
+     *
+     * @return void
+     */
+    private function test_dependency_injection(): void {
+        $test_name = 'Dependency Injection Container';
+
+        try {
+            $container = $this->plugin->get_container();
+
+            if ( null === $container ) {
+                $this->add_test_result( $test_name, false, 'Container not initialized.' );
+                return;
+            }
+
+            // Test basic container functionality
+            $test_services = [
+                'logger' => 'Logger service',
+                'cache_manager' => 'Cache Manager service',
+                'index_builder' => 'Index Builder service',
+                'settings' => 'Settings service',
+            ];
+
+            $available_services = [];
+            $missing_services = [];
+
+            foreach ( $test_services as $service_id => $description ) {
+                if ( $container->has( $service_id ) ) {
+                    $available_services[] = $description;
+                } else {
+                    $missing_services[] = $description;
+                }
+            }
+
+            if ( empty( $missing_services ) ) {
+                $this->add_test_result(
+                    $test_name,
+                    true,
+                    'Container initialized with ' . count( $available_services ) . ' core services.'
+                );
+            } else {
+                $this->add_test_result(
+                    $test_name,
+                    false,
+                    'Missing services: ' . implode( ', ', $missing_services )
+                );
+            }
+
+        } catch ( \Exception $e ) {
+            $this->add_test_result( $test_name, false, 'Container test failed: ' . $e->getMessage() );
+        }
+    }
+
+    /**
      * Test settings access.
      *
      * @return void
@@ -161,26 +216,143 @@ class SelfTest {
      */
     private function test_cache_manager(): void {
         $test_name = 'Cache Manager';
-        
+
         try {
             $cache_manager = $this->plugin->get_cache_manager();
-            
-            // Test with sample data
-            $test_data = [
-                [ 'path' => 'test/sample.pdf', 'filename' => 'sample.pdf', 'normalized_name' => 'sample' ]
-            ];
-            
-            $update_result = $cache_manager->update_index( $test_data );
-            $retrieved_data = $cache_manager->get_index();
-            
-            if ( $update_result && $retrieved_data === $test_data ) {
-                $this->add_test_result( $test_name, true, 'Cache manager store/retrieve working correctly.' );
-                // Clean up test data
-                $cache_manager->clear_index();
-            } else {
-                $this->add_test_result( $test_name, false, 'Cache manager store/retrieve failed.' );
+
+            if ( null === $cache_manager ) {
+                $this->add_test_result( $test_name, false, 'Cache manager not initialized.' );
+                return;
             }
+
+            // Store the original index to restore later
+            $original_index = $cache_manager->get_index();
+            $original_count = $original_index ? count( $original_index ) : 0;
+
+            // Test with sample data (using associative array format)
+            $test_data = [
+                'selftest-sample.pdf' => [
+                    'path' => 'test/selftest-sample.pdf',
+                    'filename' => 'selftest-sample.pdf',
+                    'normalized_name' => 'selftest-sample',
+                    'size' => 1024
+                ]
+            ];
+
+            // Test store operation (this replaces the entire index)
+            $update_result = $cache_manager->update_index( $test_data );
+            if ( ! $update_result ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Failed to store test data. Check file permissions and WordPress database access.' );
+                return;
+            }
+
+            // Test retrieve operation
+            $retrieved_data = $cache_manager->get_index();
+            if ( null === $retrieved_data ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Failed to retrieve stored data. Storage mechanism may not be working.' );
+                return;
+            }
+
+            // Verify we got exactly our test data (should be 1 item)
+            if ( count( $retrieved_data ) !== 1 ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result(
+                    $test_name,
+                    false,
+                    'Retrieved data count mismatch. Expected 1 test item, got ' . count( $retrieved_data ) . ' items.'
+                );
+                return;
+            }
+
+            // Check if our test data exists and is correct
+            if ( ! isset( $retrieved_data['selftest-sample.pdf'] ) ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Test data not found in retrieved index.' );
+                return;
+            }
+
+            // Verify specific test data integrity
+            $test_item = $retrieved_data['selftest-sample.pdf'];
+            if ( $test_item['normalized_name'] !== 'selftest-sample' ||
+                 $test_item['filename'] !== 'selftest-sample.pdf' ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Test data integrity check failed.' );
+                return;
+            }
+
+            // Test clear operation
+            $clear_result = $cache_manager->clear_index();
+            if ( ! $clear_result ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Failed to clear index.' );
+                return;
+            }
+
+            // Verify index is cleared
+            $cleared_data = $cache_manager->get_index();
+            if ( $cleared_data !== null && ! empty( $cleared_data ) ) {
+                // Restore original index before failing
+                if ( $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+                $this->add_test_result( $test_name, false, 'Index not properly cleared.' );
+                return;
+            }
+
+            // Restore original index
+            if ( $original_index !== null && ! empty( $original_index ) ) {
+                $restore_result = $cache_manager->update_index( $original_index );
+                if ( ! $restore_result ) {
+                    $this->add_test_result( $test_name, false, 'Test passed but failed to restore original index.' );
+                    return;
+                }
+            }
+
+            // Determine storage method for informative message
+            $storage_method = 'unknown';
+            if ( function_exists( 'get_option' ) ) {
+                $is_file_storage = \get_option( 'kapl_pdf_index_file_storage', false );
+                $storage_method = $is_file_storage ? 'file-based' : 'database';
+            } else {
+                $storage_method = 'file-based (WordPress functions unavailable)';
+            }
+
+            $this->add_test_result(
+                $test_name,
+                true,
+                "Cache manager store/retrieve/clear working correctly using {$storage_method} storage. Original index ({$original_count} items) restored."
+            );
+
         } catch ( \Exception $e ) {
+            // Try to restore original index on exception
+            try {
+                if ( isset( $original_index ) && $original_index !== null ) {
+                    $cache_manager->update_index( $original_index );
+                }
+            } catch ( \Exception $restore_e ) {
+                // Ignore restore errors in exception handler
+            }
+
             $this->add_test_result( $test_name, false, 'Cache manager test failed: ' . $e->getMessage() );
         }
     }

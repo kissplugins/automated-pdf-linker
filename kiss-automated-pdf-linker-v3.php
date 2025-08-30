@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name:       KISS Automated PDF Linker
+ * Plugin Name:       KISS Automated PDF Linker (PSR4)
  * Plugin URI:        https://github.com/kissplugins/KISS-automated-pdf-linker
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
  * Version:           3.0.0
@@ -32,19 +32,33 @@ if ( defined( 'KAPL_VERSION' ) && version_compare( KAPL_VERSION, '3.0.0', '<' ) 
     return; // Stop loading v3
 }
 
-// Include Composer autoloader
-require_once plugin_dir_path( __FILE__ ) . 'vendor/autoload.php';
+// Include PSR-4 autoloader
+$autoloader_path = plugin_dir_path( __FILE__ ) . 'src/autoloader.php';
+if ( ! file_exists( $autoloader_path ) ) {
+    add_action( 'admin_notices', function() {
+        echo '<div class="notice notice-error"><p>';
+        echo '<strong>KISS Automated PDF Linker:</strong> ';
+        echo 'Autoloader file missing. Please reinstall the plugin.';
+        echo '</p></div>';
+    } );
+    return;
+}
+require_once $autoloader_path;
 
 // Include the Plugin Update Checker
-require plugin_dir_path( __FILE__ ) . 'lib/plugin-update-checker/plugin-update-checker.php';
-use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+$update_checker_path = plugin_dir_path( __FILE__ ) . 'lib/plugin-update-checker/plugin-update-checker.php';
+if ( file_exists( $update_checker_path ) ) {
+    require $update_checker_path;
 
-$myUpdateChecker = PucFactory::buildUpdateChecker(
-    'https://github.com/kissplugins/automated-pdf-linker',
-    __FILE__,
-    'kiss-automated-pdf-linker'
-);
-$myUpdateChecker->setBranch( 'main' );
+    if ( class_exists( 'YahnisElsts\PluginUpdateChecker\v5\PucFactory' ) ) {
+        $myUpdateChecker = \YahnisElsts\PluginUpdateChecker\v5\PucFactory::buildUpdateChecker(
+            'https://github.com/kissplugins/automated-pdf-linker',
+            __FILE__,
+            'kiss-automated-pdf-linker'
+        );
+        $myUpdateChecker->setBranch( 'main' );
+    }
+}
 
 // Use the new namespaced classes
 use KissPlugins\AutomatedPdfLinker\Core\Plugin;
