@@ -202,6 +202,23 @@ src/
 4. Add comprehensive unit tests
 5. Update documentation
 
+### Remote Git Updater Integration
+
+The plugin includes **Yahnis Elsts' Plugin Update Checker v5** for automatic updates from GitHub:
+
+- **Library Location**: `lib/plugin-update-checker/`
+- **Integration**: Main plugin file (`kiss-automated-pdf-linker-v3.php`)
+- **Repository**: `https://github.com/kissplugins/automated-pdf-linker`
+- **Branch**: `main`
+- **Features**:
+  - Automatic update checks from GitHub releases
+  - WordPress admin integration (shows in Plugins page)
+  - One-click updates directly from WordPress
+  - Version comparison and error handling
+  - Professional deployment workflow
+
+This enables **seamless automatic updates** for end users without requiring manual plugin downloads.
+
 ### Code Standards
 - PSR-12 coding standards
 - WordPress coding standards for WordPress-specific code
