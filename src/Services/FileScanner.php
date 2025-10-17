@@ -157,9 +157,11 @@ class FileScanner {
         $normalized_name = FileNormalizer::normalize( $filename );
 
         return [
-            'path'            => $relative_path,  // e.g., '2024/04/document.pdf' or 'coas/report.pdf'
-            'filename'        => $filename,       // e.g., 'document.pdf'
-            'normalized_name' => $normalized_name // e.g., 'document'
+            'path'            => $relative_path,              // e.g., '2024/04/document.pdf' or 'coas/report.pdf'
+            'filename'        => $filename,                   // e.g., 'document.pdf'
+            'normalized_name' => $normalized_name,            // e.g., 'document'
+            'modified'        => (int) $fileinfo->getMTime(), // Last modified timestamp.
+            'size_bytes'      => (int) $fileinfo->getSize(),  // Raw file size in bytes.
         ];
     }
 

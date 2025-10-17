@@ -96,6 +96,10 @@ class AdminMenu {
 
             <hr>
 
+            <?php $this->render_folder_file_listing_viewer(); ?>
+
+            <hr>
+
             <h2><?php \esc_html_e( 'System Self-Tests', 'kiss-automated-pdf-linker' ); ?></h2>
             <p><?php \esc_html_e( 'Run diagnostic tests to verify plugin functionality and catch potential issues.', 'kiss-automated-pdf-linker' ); ?></p>
 
@@ -120,13 +124,13 @@ class AdminMenu {
      */
     private function render_index_status(): void {
         $index_stats = $this->settings->get_index_builder()->get_index_stats();
-        
+
         echo '<p><em>' . \esc_html( $index_stats['message'] ) . '</em></p>';
-        
+
         if ( 'ready' === $index_stats['status'] ) {
             echo '<details>';
             echo '<summary>' . \esc_html__( 'Index Details', 'kiss-automated-pdf-linker' ) . '</summary>';
-            
+
             $validation = $this->settings->get_index_builder()->validate_index();
             if ( $validation['is_valid'] ) {
                 echo '<p style="color: green;">✓ ' . \esc_html__( 'Index is valid', 'kiss-automated-pdf-linker' ) . '</p>';
@@ -136,8 +140,110 @@ class AdminMenu {
                     echo '<p style="color: red; margin-left: 20px;">• ' . \esc_html( $error ) . '</p>';
                 }
             }
-            
+
             echo '</details>';
         }
+    }
+
+    /**
+     * Render the folder file listing viewer.
+     *
+     * @return void
+     */
+    private function render_folder_file_listing_viewer(): void {
+        $settings = $this->settings->get_settings();
+        $selected_directories = $settings['selected_directories'] ?? [];
+
+        echo '<h2>' . \esc_html__( 'Folder File Listing Viewer', 'kiss-automated-pdf-linker' ) . '</h2>';
+        echo '<p>' . \esc_html__( 'Review the PDF files that were discovered in each selected folder. Click a file name to open it in a new tab.', 'kiss-automated-pdf-linker' ) . '</p>';
+
+        if ( empty( $selected_directories ) ) {
+            echo '<p><em>' . \esc_html__( 'No folders have been selected for scanning yet. Choose folders above and rebuild the index to see their contents.', 'kiss-automated-pdf-linker' ) . '</em></p>';
+            return;
+        }
+
+        $grouped_files = $this->settings->get_index_builder()->get_index_by_directory( $selected_directories );
+
+        if ( empty( $grouped_files ) ) {
+            echo '<p><em>' . \esc_html__( 'The index does not contain any PDFs yet. Rebuild the index after selecting folders to populate this viewer.', 'kiss-automated-pdf-linker' ) . '</em></p>';
+            return;
+        }
+
+        $upload_dir_info = wp_upload_dir();
+        $base_url = trailingslashit( $upload_dir_info['baseurl'] );
+
+        echo '<div class="kapl-folder-viewer">';
+
+        foreach ( $selected_directories as $directory ) {
+            $files = $grouped_files[ $directory ] ?? [];
+
+            echo '<details class="kapl-folder-viewer__folder" open>';
+            echo '<summary>' . \esc_html( $directory ) . '/</summary>';
+
+            if ( empty( $files ) ) {
+                echo '<p class="kapl-folder-viewer__empty">' . \esc_html__( 'No PDF files found in this folder.', 'kiss-automated-pdf-linker' ) . '</p>';
+                echo '</details>';
+                continue;
+            }
+
+            echo '<div class="kapl-folder-viewer__table-wrapper">';
+            echo '<table class="kapl-folder-viewer__table">';
+            echo '<thead>';
+            echo '<tr>';
+            echo '<th scope="col">' . \esc_html__( 'File Name', 'kiss-automated-pdf-linker' ) . '</th>';
+            echo '<th scope="col">' . \esc_html__( 'Modified Date', 'kiss-automated-pdf-linker' ) . '</th>';
+            echo '<th scope="col">' . \esc_html__( 'File Size (KB)', 'kiss-automated-pdf-linker' ) . '</th>';
+            echo '</tr>';
+            echo '</thead>';
+            echo '<tbody>';
+
+            foreach ( $files as $file ) {
+                $relative_path = isset( $file['path'] ) ? (string) $file['path'] : '';
+                $file_name = isset( $file['filename'] ) ? (string) $file['filename'] : basename( $relative_path );
+
+                if ( '' === $relative_path ) {
+                    continue;
+                }
+
+                $file_url = $base_url . ltrim( $relative_path, '/' );
+                $folder_prefix = $directory . '/';
+                $display_path = $relative_path;
+                $modified_display = '&mdash;';
+                $size_display = '&mdash;';
+
+                if ( 0 === strpos( $relative_path, $folder_prefix ) ) {
+                    $display_path = substr( $relative_path, strlen( $folder_prefix ) );
+                }
+
+                if ( isset( $file['modified'] ) && is_numeric( $file['modified'] ) ) {
+                    $modified_display = \esc_html( \date_i18n( \get_option( 'date_format' ) . ' ' . \get_option( 'time_format' ), (int) $file['modified'] ) );
+                }
+
+                if ( isset( $file['size_bytes'] ) && is_numeric( $file['size_bytes'] ) ) {
+                    $kilobytes = (int) $file['size_bytes'] / 1024;
+                    $size_display = \esc_html( number_format_i18n( max( $kilobytes, 0 ), 1 ) );
+                }
+
+                echo '<tr class="kapl-folder-viewer__file">';
+                echo '<td>';
+                echo '<a href="' . esc_url( $file_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $file_name ) . '</a>';
+
+                if ( '' !== $display_path && $display_path !== $file_name ) {
+                    echo '<span class="kapl-folder-viewer__path">' . esc_html( $display_path ) . '</span>';
+                }
+
+                echo '</td>';
+                echo '<td>' . $modified_display . '</td>';
+                echo '<td>' . $size_display . '</td>';
+                echo '</tr>';
+            }
+
+            echo '</tbody>';
+            echo '</table>';
+            echo '</div>';
+            echo '</details>';
+        }
+
+        echo '</div>';
     }
 }
