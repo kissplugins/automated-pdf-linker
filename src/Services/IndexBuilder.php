@@ -217,4 +217,43 @@ class IndexBuilder {
     public function get_available_directories(): array {
         return $this->file_scanner->get_available_directories();
     }
+
+    /**
+     * Group index entries by their top-level directory.
+     *
+     * @param array $selected_directories Directories that should be included in the grouping.
+     * @return array<string, array> Array keyed by directory names containing the matching index entries.
+     */
+    public function get_index_by_directory( array $selected_directories ): array {
+        $index = $this->get_index() ?? [];
+
+        if ( empty( $selected_directories ) || empty( $index ) ) {
+            return [];
+        }
+
+        $grouped = [];
+
+        foreach ( $selected_directories as $directory ) {
+            $grouped[ $directory ] = [];
+        }
+
+        foreach ( $index as $item ) {
+            if ( ! isset( $item['path'] ) ) {
+                continue;
+            }
+
+            $relative_path = (string) $item['path'];
+            $top_level_dir = strstr( $relative_path, '/', true );
+
+            if ( false === $top_level_dir ) {
+                $top_level_dir = $relative_path;
+            }
+
+            if ( isset( $grouped[ $top_level_dir ] ) ) {
+                $grouped[ $top_level_dir ][] = $item;
+            }
+        }
+
+        return $grouped;
+    }
 }
