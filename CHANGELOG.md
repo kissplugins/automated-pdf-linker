@@ -5,6 +5,13 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 
 ## [3.1.4] - 2025-10-17
+## [3.1.5] - 2025-10-17
+
+### Planning
+- Added PROJECT-FILELIST-V2.md with a 2-phase plan for search/filter/sort in the Folder Viewer.
+- No functional changes in this version; planning-only.
+
+
 
 ### Improved
 - High-contrast styling for the “Total files” summary in the Folder Viewer to improve legibility on dark UI.
