@@ -54,6 +54,31 @@ class IndexBuilder {
     }
 
     /**
+     * Check if index needs migration and rebuild if necessary.
+     *
+     * @param array $selected_directories Array of directory names to scan.
+     * @return bool True if migration was performed, false otherwise.
+     */
+    public function check_and_migrate_index( array $selected_directories ): bool {
+        if ( ! $this->cache_manager->needs_index_migration() ) {
+            return false;
+        }
+
+        $this->logger->info( 'Index migration detected. Rebuilding index with new metadata fields.' );
+
+        // Rebuild the index to include new metadata fields
+        $result = $this->build_index( $selected_directories );
+
+        if ( is_wp_error( $result ) ) {
+            $this->logger->error( 'Index migration failed: ' . $result->get_error_message() );
+            return false;
+        }
+
+        $this->logger->info( "Index migration completed successfully. Indexed {$result} files with new metadata." );
+        return true;
+    }
+
+    /**
      * Build PDF index from selected directories.
      *
      * @param array $selected_directories Array of directory names to scan.
@@ -71,9 +96,9 @@ class IndexBuilder {
 
         try {
             $pdf_files = $this->file_scanner->scan_directories( $selected_directories );
-            
+
             $update_success = $this->cache_manager->update_index( $pdf_files );
-            
+
             if ( ! $update_success ) {
                 $error_message = __( 'Failed to save the PDF index to the database.', 'kiss-automated-pdf-linker' );
                 $this->logger->error( $error_message );
@@ -82,16 +107,16 @@ class IndexBuilder {
 
             $file_count = count( $pdf_files );
             $this->logger->info( "PDF index build completed successfully. Indexed {$file_count} files." );
-            
+
             return $file_count;
-            
+
         } catch ( \Exception $e ) {
             $error_message = sprintf(
                 /* translators: %s: Error message */
                 __( 'Error building PDF index: %s', 'kiss-automated-pdf-linker' ),
                 $e->getMessage()
             );
-            
+
             $this->logger->error( $error_message );
             return new WP_Error( 'build_error', $error_message );
         }

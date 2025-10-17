@@ -30,6 +30,16 @@ class CacheManager {
     const INDEX_FILE_PATH = 'pdf-index.json';
 
     /**
+     * Index version option name.
+     */
+    const INDEX_VERSION_OPTION_NAME = 'kapl_pdf_index_version';
+
+    /**
+     * Current index version.
+     */
+    const CURRENT_INDEX_VERSION = '3.1.0';
+
+    /**
      * Logger instance.
      *
      * @var Logger
@@ -106,6 +116,26 @@ class CacheManager {
     }
 
     /**
+     * Check if index needs migration to include new metadata fields.
+     *
+     * @return bool True if index needs migration, false otherwise.
+     */
+    public function needs_index_migration(): bool {
+        if ( ! function_exists( 'get_option' ) ) {
+            return false;
+        }
+
+        $index_version = \get_option( self::INDEX_VERSION_OPTION_NAME, '3.0.0' );
+        $needs_migration = version_compare( $index_version, self::CURRENT_INDEX_VERSION, '<' );
+
+        if ( $needs_migration ) {
+            $this->logger->info( "Index migration needed: current version {$index_version}, target version " . self::CURRENT_INDEX_VERSION );
+        }
+
+        return $needs_migration;
+    }
+
+    /**
      * Update PDF index in cache.
      *
      * @param array $index_data PDF index data.
@@ -133,6 +163,11 @@ class CacheManager {
         if ( ! function_exists( 'update_option' ) ) {
             $this->logger->debug( 'WordPress functions not available, using file storage.' );
             return $this->save_index_to_file( $index_data );
+        }
+
+        // Update index version
+        if ( function_exists( 'update_option' ) ) {
+            \update_option( self::INDEX_VERSION_OPTION_NAME, self::CURRENT_INDEX_VERSION, 'no' );
         }
 
         // Check if the JSON is too large (WordPress typically has issues with options > 1MB)

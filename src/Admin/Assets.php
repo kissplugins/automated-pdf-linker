@@ -45,7 +45,7 @@ class Assets {
             'kapl-admin-styles',
             $plugin_url . 'assets/admin.css',
             [],
-            '3.0.0'
+            '3.0.1'
         );
     }
 

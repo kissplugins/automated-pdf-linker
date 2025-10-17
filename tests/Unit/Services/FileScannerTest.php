@@ -164,23 +164,25 @@ class FileScannerTest extends TestCase {
      */
     public function test_file_information_extraction(): void {
         $test_file = $this->test_dir . '/test_document.pdf';
-        
+
         // Create a test file with some content
         file_put_contents( $test_file, 'Test PDF content for size testing' );
 
         $results = $this->file_scanner->scan_directory( $this->test_dir );
-        
+
         $this->assertCount( 1, $results );
-        
+
         $file_info = $results[0];
         $this->assertArrayHasKey( 'filename', $file_info );
         $this->assertArrayHasKey( 'path', $file_info );
-        $this->assertArrayHasKey( 'size', $file_info );
+        $this->assertArrayHasKey( 'size_bytes', $file_info );
+        $this->assertArrayHasKey( 'modified', $file_info );
         $this->assertArrayHasKey( 'normalized_name', $file_info );
-        
+
         $this->assertEquals( 'test_document.pdf', $file_info['filename'] );
         $this->assertStringContains( 'test_document.pdf', $file_info['path'] );
-        $this->assertGreaterThan( 0, $file_info['size'] );
+        $this->assertGreaterThan( 0, $file_info['size_bytes'] );
+        $this->assertGreaterThan( 0, $file_info['modified'] );
         $this->assertEquals( 'test-document', $file_info['normalized_name'] );
     }
 

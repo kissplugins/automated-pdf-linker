@@ -346,6 +346,31 @@ class Settings {
 
 
     /**
+     * Check if index needs migration and perform it if necessary.
+     *
+     * @return void
+     */
+    public function check_and_perform_migration(): void {
+        $settings = $this->get_settings();
+        $selected_directories = $settings['selected_directories'] ?? [];
+
+        if ( empty( $selected_directories ) ) {
+            return;
+        }
+
+        $migration_performed = $this->index_builder->check_and_migrate_index( $selected_directories );
+
+        if ( $migration_performed ) {
+            \add_settings_error(
+                'kapl_migration_status',
+                'migration_success',
+                \esc_html__( 'PDF index was automatically updated to include file metadata (modified date and file size).', 'kiss-automated-pdf-linker' ),
+                'updated'
+            );
+        }
+    }
+
+    /**
      * Handle index rebuilding if requested.
      *
      * @return void

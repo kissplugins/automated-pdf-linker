@@ -60,6 +60,9 @@ class AdminMenu {
             return;
         }
 
+        // Check for index migration (e.g., adding new metadata fields)
+        $this->settings->check_and_perform_migration();
+
         // Handle index rebuilding action
         $this->settings->handle_index_rebuild();
 
@@ -68,6 +71,7 @@ class AdminMenu {
             <h1><?php echo \esc_html( \get_admin_page_title() ); ?></h1>
 
             <?php \settings_errors( 'kapl_rebuild_status' ); ?>
+            <?php \settings_errors( 'kapl_migration_status' ); ?>
 
             <form method="post" action="options.php">
                 <?php
@@ -225,7 +229,7 @@ class AdminMenu {
                 }
 
                 echo '<tr class="kapl-folder-viewer__file">';
-                echo '<td>';
+                echo '<td class="kapl-folder-viewer__filename">';
                 echo '<a href="' . esc_url( $file_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $file_name ) . '</a>';
 
                 if ( '' !== $display_path && $display_path !== $file_name ) {
@@ -233,8 +237,8 @@ class AdminMenu {
                 }
 
                 echo '</td>';
-                echo '<td>' . $modified_display . '</td>';
-                echo '<td>' . $size_display . '</td>';
+                echo '<td class="kapl-folder-viewer__modified">' . $modified_display . '</td>';
+                echo '<td class="kapl-folder-viewer__size">' . $size_display . '</td>';
                 echo '</tr>';
             }
 

@@ -109,8 +109,8 @@
 }
 
 .kapl-folder-viewer__table-wrapper {
-    padding: 0 20px 12px;
-    overflow-x: auto;
+    padding: 0 20px 16px !important;
+    overflow-x: auto !important;
 }
 
 .kapl-folder-viewer__table {
@@ -122,18 +122,43 @@
 
 .kapl-folder-viewer__table th,
 .kapl-folder-viewer__table td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #1e1e1e;
-    text-align: left;
-    vertical-align: top;
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #1e1e1e !important;
+    text-align: left !important;
+    vertical-align: top !important;
 }
 
 .kapl-folder-viewer__table th {
-    font-weight: 600;
-    background: #111;
-    position: sticky;
-    top: 0;
-    z-index: 1;
+    font-weight: 600 !important;
+    background: #111 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+}
+
+/* Column 1: File Name - Left aligned with left padding */
+.kapl-folder-viewer__table th:nth-child(1),
+.kapl-folder-viewer__table td:nth-child(1) {
+    width: 45% !important;
+    min-width: 250px !important;
+    padding: 12px 16px 12px 20px !important;
+}
+
+/* Column 2: Modified Date - Center column with balanced padding */
+.kapl-folder-viewer__table th:nth-child(2),
+.kapl-folder-viewer__table td:nth-child(2) {
+    width: 30% !important;
+    min-width: 180px !important;
+    padding: 12px 40px 12px 16px !important;
+}
+
+/* Column 3: File Size - Right aligned with extra left padding for spacing */
+.kapl-folder-viewer__table th:nth-child(3),
+.kapl-folder-viewer__table td:nth-child(3) {
+    width: 25% !important;
+    min-width: 120px !important;
+    text-align: right !important;
+    padding: 12px 20px 12px 40px !important;
 }
 
 .kapl-folder-viewer__table tr:last-child td {
@@ -163,6 +188,23 @@
     color: #c5c5c5;
     font-style: italic;
     padding: 0 20px 12px;
+}
+
+/* Column-specific styling */
+.kapl-folder-viewer__filename {
+    word-break: break-word !important;
+}
+
+.kapl-folder-viewer__modified {
+    white-space: nowrap !important;
+    color: #a8a8a8 !important;
+    font-size: 13px !important;
+}
+
+.kapl-folder-viewer__size {
+    white-space: nowrap !important;
+    color: #a8a8a8 !important;
+    font-size: 13px !important;
 }
 
 /* Responsive adjustments */
