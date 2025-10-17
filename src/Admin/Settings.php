@@ -160,6 +160,15 @@ class Settings {
             self::SETTINGS_SLUG,
             'kapl_debug_section'
         );
+
+            \add_settings_field(
+                'kapl_on_screen_debug',
+                \__( 'Enable on-screen debug panel', 'kiss-automated-pdf-linker' ),
+                [ $this, 'on_screen_debug_field_callback' ],
+                self::SETTINGS_SLUG,
+                'kapl_debug_section'
+            );
+
     }
 
 
@@ -191,6 +200,7 @@ class Settings {
         // Sanitize checkboxes
         $sanitized_input['use_product_title_match'] = isset( $input['use_product_title_match'] );
         $sanitized_input['debug_logging'] = isset( $input['debug_logging'] );
+        $sanitized_input['on_screen_debug'] = isset( $input['on_screen_debug'] );
 
         return $sanitized_input;
     }
@@ -206,6 +216,7 @@ class Settings {
             'link_color'              => '#0000FF',
             'use_product_title_match' => false,
             'debug_logging'           => false,
+            'on_screen_debug'         => false,
         ] );
     }
 
@@ -272,12 +283,12 @@ class Settings {
         $settings = $this->get_settings();
         $link_color = $settings['link_color'];
         ?>
-        <input 
-            type="text" 
-            name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[link_color]" 
-            id="kapl_link_color" 
-            value="<?php echo esc_attr( $link_color ); ?>" 
-            class="kapl-color-picker" 
+        <input
+            type="text"
+            name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[link_color]"
+            id="kapl_link_color"
+            value="<?php echo esc_attr( $link_color ); ?>"
+            class="kapl-color-picker"
         />
         <p class="description">
             <?php esc_html_e( 'Choose the color for PDF links. This will be applied to all links with the kapl-pdf-link class.', 'kiss-automated-pdf-linker' ); ?>
@@ -295,11 +306,11 @@ class Settings {
         $use_product_title_match = $settings['use_product_title_match'];
         ?>
         <label for="kapl_use_product_title_match">
-            <input 
-                type="checkbox" 
-                name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[use_product_title_match]" 
-                id="kapl_use_product_title_match" 
-                value="1" 
+            <input
+                type="checkbox"
+                name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[use_product_title_match]"
+                id="kapl_use_product_title_match"
+                value="1"
                 <?php checked( $use_product_title_match, true ); ?>
             />
             <?php esc_html_e( 'Enable automatic PDF linking for strains in the product tab.', 'kiss-automated-pdf-linker' ); ?>
@@ -316,7 +327,7 @@ class Settings {
      * @return void
      */
     public function debug_section_callback(): void {
-        echo '<p>' . esc_html__( 'Toggle debug output to the PHP error log.', 'kiss-automated-pdf-linker' ) . '</p>';
+        echo '<p>' . esc_html__( 'Enable write-to-log debugging and/or the on-screen debug panel for the Folder File Listing Viewer.', 'kiss-automated-pdf-linker' ) . '</p>';
     }
 
     /**
@@ -341,9 +352,30 @@ class Settings {
         <?php
     }
 
-
-
-
+    /**
+     * On-screen debug field callback.
+     *
+     * @return void
+     */
+    public function on_screen_debug_field_callback(): void {
+        $settings = $this->get_settings();
+        $enabled = ! empty( $settings['on_screen_debug'] );
+        ?>
+        <label for="kapl_on_screen_debug">
+            <input
+                type="checkbox"
+                name="<?php echo esc_attr( self::SETTINGS_OPTION_NAME ); ?>[on_screen_debug]"
+                id="kapl_on_screen_debug"
+                value="1"
+                <?php checked( $enabled, true ); ?>
+            />
+            <?php esc_html_e( 'Show the on-screen debug panel for the Folder File Listing Viewer.', 'kiss-automated-pdf-linker' ); ?>
+        </label>
+        <p class="description">
+            <?php esc_html_e( 'You can also toggle ad-hoc via the URL parameter kapl_debug=1.', 'kiss-automated-pdf-linker' ); ?>
+        </p>
+        <?php
+    }
 
     /**
      * Check if index needs migration and perform it if necessary.

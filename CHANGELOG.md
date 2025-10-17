@@ -2,6 +2,38 @@
 
 All notable changes to the KISS Automated PDF Linker plugin will be documented in this file.
 
+
+
+## [3.1.3] - 2025-10-17
+
+### Added
+- Folder Viewer now shows a total file count at the top and numbers each row starting from `1.)` across all folders.
+
+### Notes
+- Added prominent code comments explaining why we detect the admin page by slug (`strpos($hook, Settings::SETTINGS_SLUG)`) to support both `tools_page_` and `settings_page_` contexts. This prevents accidental regressions.
+
+## [3.1.2] - 2025-10-17
+
+### Fixed
+- Debug assets were not loading on the Tools screen due to using the wrong admin page hook prefix. Now we detect our screen by slug and load for both `tools_page_` and `settings_page_` contexts.
+
+### Changed
+- Inline debug JS now attaches to the existing `kapl-admin-script` handle to guarantee execution.
+- Added persistent “Enable on-screen debug panel” setting under Debugging; URL `kapl_debug=1` still overrides.
+
+## [3.1.1] - 2025-10-17
+
+### Added
+- On-screen debugging for the Folder File Listing Viewer (toggle via `?kapl_debug=1`)
+- Debug panel shows whether `assets/admin.css` is enqueued, its src, version, and filemtime
+- Live measurements of table layout mode and first-row column widths/paddings
+- Visual highlights for the three columns to inspect spacing quickly
+
+### Changed
+- Bumped admin stylesheet handle version to `3.0.2` to force cache refresh
+- Plugin version bumped to `3.1.1`
+
+
 ## [3.1.0] - 2025-10-17
 
 ### Added

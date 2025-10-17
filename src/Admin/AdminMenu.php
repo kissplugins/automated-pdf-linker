@@ -39,6 +39,14 @@ class AdminMenu {
      * @return void
      */
     public function add_admin_menu(): void {
+        /*
+         * IMPORTANT: This settings screen is registered under Tools via add_management_page().
+         * That produces an admin hook like `tools_page_{slug}` rather than `settings_page_{slug}`.
+         * The Assets::enqueue_scripts() guard uses a slug substring match to support both contexts
+         * in case this screen ever moves. Do not change registration context unless you also
+         * update the asset loader accordingly.
+         */
+
         \add_management_page(
             \__( 'KISS PDF Linker Settings', 'kiss-automated-pdf-linker' ),
             \__( 'KISS PDF Linker', 'kiss-automated-pdf-linker' ),
@@ -161,6 +169,18 @@ class AdminMenu {
         echo '<h2>' . \esc_html__( 'Folder File Listing Viewer', 'kiss-automated-pdf-linker' ) . '</h2>';
         echo '<p>' . \esc_html__( 'Review the PDF files that were discovered in each selected folder. Click a file name to open it in a new tab.', 'kiss-automated-pdf-linker' ) . '</p>';
 
+
+        $kapl_debug_enabled = ( isset($_GET['kapl_debug']) && '1' === (string) $_GET['kapl_debug'] );
+        if ( ! $kapl_debug_enabled ) {
+            $kapl_settings = get_option( \KissPlugins\AutomatedPdfLinker\Admin\Settings::SETTINGS_OPTION_NAME, [] );
+            $kapl_debug_enabled = ! empty( $kapl_settings['on_screen_debug'] );
+        }
+        $kapl_debug_toggle_url = esc_url( add_query_arg( 'kapl_debug', $kapl_debug_enabled ? '0' : '1' ) );
+        echo '<p><a href="' . $kapl_debug_toggle_url . '" class="button button-small">' . ( $kapl_debug_enabled ? esc_html__( 'Disable Debug', 'kiss-automated-pdf-linker' ) : esc_html__( 'Enable Debug', 'kiss-automated-pdf-linker' ) ) . '</a></p>';
+        if ( $kapl_debug_enabled ) {
+            echo '<div id="kapl-debug-panel" class="kapl-debug-panel" aria-live="polite"></div>';
+        }
+
         if ( empty( $selected_directories ) ) {
             echo '<p><em>' . \esc_html__( 'No folders have been selected for scanning yet. Choose folders above and rebuild the index to see their contents.', 'kiss-automated-pdf-linker' ) . '</em></p>';
             return;
@@ -173,10 +193,23 @@ class AdminMenu {
             return;
         }
 
+        // Compute total number of files across all selected directories (for summary at top).
+        $total_files_count = 0;
+        foreach ( $selected_directories as $dir_for_count ) {
+            if ( isset( $grouped_files[ $dir_for_count ] ) && is_array( $grouped_files[ $dir_for_count ] ) ) {
+                $total_files_count += count( $grouped_files[ $dir_for_count ] );
+            }
+        }
+
         $upload_dir_info = wp_upload_dir();
         $base_url = trailingslashit( $upload_dir_info['baseurl'] );
 
         echo '<div class="kapl-folder-viewer">';
+            // Show total number of files at the top of the list.
+            echo '<p class="kapl-folder-viewer__total"><strong>' . sprintf( \esc_html__( 'Total files: %d', 'kiss-automated-pdf-linker' ), (int) $total_files_count ) . '</strong></p>';
+
+        // Global, cross-folder running row number starting at 1 (requested UI)
+        $row_number = 1;
 
         foreach ( $selected_directories as $directory ) {
             $files = $grouped_files[ $directory ] ?? [];
@@ -191,7 +224,7 @@ class AdminMenu {
             }
 
             echo '<div class="kapl-folder-viewer__table-wrapper">';
-            echo '<table class="kapl-folder-viewer__table">';
+            echo '<table class="kapl-folder-viewer__table"' . ( $kapl_debug_enabled ? ' data-kapl-debug="1"' : '' ) . '>';
             echo '<thead>';
             echo '<tr>';
             echo '<th scope="col">' . \esc_html__( 'File Name', 'kiss-automated-pdf-linker' ) . '</th>';
@@ -230,6 +263,8 @@ class AdminMenu {
 
                 echo '<tr class="kapl-folder-viewer__file">';
                 echo '<td class="kapl-folder-viewer__filename">';
+                // Prepend running row number like "1.) " before the filename link (does not reset per folder)
+                echo '<span class="kapl-rownum">' . (int) $row_number . '.) </span>';
                 echo '<a href="' . esc_url( $file_url ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $file_name ) . '</a>';
 
                 if ( '' !== $display_path && $display_path !== $file_name ) {
@@ -238,6 +273,9 @@ class AdminMenu {
 
                 echo '</td>';
                 echo '<td class="kapl-folder-viewer__modified">' . $modified_display . '</td>';
+                // Increment global row number after rendering this row
+                $row_number++;
+
                 echo '<td class="kapl-folder-viewer__size">' . $size_display . '</td>';
                 echo '</tr>';
             }
