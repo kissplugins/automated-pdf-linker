@@ -204,6 +204,22 @@ class AdminMenu {
             // Show total number of files at the top of the list.
             echo '<p class="kapl-folder-viewer__total"><strong>' . sprintf( \esc_html__( 'Total files: %d', 'kiss-automated-pdf-linker' ), (int) $total_files_count ) . '</strong></p>';
 
+            // Phase 1 controls: search, date filter, and sort toggles (client-side only)
+            echo '<div class="kapl-folder-viewer__controls">'
+                . '<label class="kapl-c-label" for="kapl-filter-q">' . \esc_html__( 'Search', 'kiss-automated-pdf-linker' ) . '</label>'
+                . '<input type="text" id="kapl-filter-q" class="regular-text" placeholder="' . \esc_attr__( 'filename, path or folder', 'kiss-automated-pdf-linker' ) . '" />'
+                . '<label class="kapl-c-label" for="kapl-filter-date">' . \esc_html__( 'Date', 'kiss-automated-pdf-linker' ) . '</label>'
+                . '<input type="text" id="kapl-filter-date" class="regular-text" placeholder="' . \esc_attr__( 'YYYY-MM-DD or 10-17-25', 'kiss-automated-pdf-linker' ) . '" />'
+                . '<span class="kapl-filter-sep">|</span>'
+                . '<div class="kapl-folder-viewer__sort">'
+                    . '<button type="button" class="button kapl-sort" data-key="modified" aria-pressed="false">' . \esc_html__( 'Sort by Date', 'kiss-automated-pdf-linker' ) . '</button>'
+                    . '<button type="button" class="button kapl-sort" data-key="name" aria-pressed="false">' . \esc_html__( 'Sort by Name', 'kiss-automated-pdf-linker' ) . '</button>'
+                . '</div>'
+                . '<div id="kapl-filter-count" class="kapl-filter-count" aria-live="polite" data-total="' . (int) $total_files_count . '">'
+                    . sprintf( \esc_html__( 'Showing %1$d of %2$d', 'kiss-automated-pdf-linker' ), (int) $total_files_count, (int) $total_files_count )
+                . '</div>'
+            . '</div>';
+
         // Global, cross-folder running row number starting at 1 (requested UI)
         $row_number = 1;
 
@@ -257,7 +273,13 @@ class AdminMenu {
                     $size_display = \esc_html( number_format_i18n( max( $kilobytes, 0 ), 1 ) );
                 }
 
-                echo '<tr class="kapl-folder-viewer__file">';
+                echo '<tr class="kapl-folder-viewer__file"'
+                    . ' data-filename="' . \esc_attr( (string) $file_name ) . '"'
+                    . ' data-folder="' . \esc_attr( (string) $directory ) . '"'
+                    . ' data-path="' . \esc_attr( (string) $relative_path ) . '"'
+                    . ' data-modified="' . \esc_attr( isset($file['modified']) && is_numeric($file['modified']) ? (int) $file['modified'] : 0 ) . '"'
+                    . ' data-size="' . \esc_attr( isset($file['size_bytes']) && is_numeric($file['size_bytes']) ? (int) $file['size_bytes'] : 0 ) . '"'
+                    . '>';
                 echo '<td class="kapl-folder-viewer__filename">';
                 // Prepend running row number like "1.) " before the filename link (does not reset per folder)
                 echo '<span class="kapl-rownum">' . (int) $row_number . '.) </span>';

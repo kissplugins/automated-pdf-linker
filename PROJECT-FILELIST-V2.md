@@ -24,7 +24,7 @@ We will deliver in 2 phases to reduce risk and ship value early.
 - State management: Encapsulate UI state transitions; if an FSM already exists, integrate with it; otherwise implement a small finite-state controller specific to the viewer.
 
 ## Phase 1 — Client-side controls (no REST)
-- [ ] Status: Not Started
+- [/] Status: In Progress
 Deliver value quickly by enhancing the current viewer with search/sort/filter using in-browser arrays. Suitable for up to a few thousand rows.
 
 ### Functional scope
@@ -67,13 +67,13 @@ Deliver value quickly by enhancing the current viewer with search/sort/filter us
 - No PHP warnings; no console errors.
 
 ### Checklist (Phase 1)
-- [ ] Add controls markup (search, date, sort) in AdminMenu renderer.
-- [ ] Expose row data as data attributes or build dataset from DOM.
-- [ ] Implement small state controller (FSM-friendly) for filters/sorts.
-- [ ] Implement debounced text filter and date parse/filter.
-- [ ] Implement sort toggles and visual states.
-- [ ] Update result count and ARIA live region.
-- [ ] Add minimal CSS for controls aligning with dark theme.
+- [x] Add controls markup (search, date, sort) in AdminMenu renderer.
+- [x] Expose row data as data attributes or build dataset from DOM.
+- [x] Implement small state controller (FSM-friendly) for filters/sorts.
+- [x] Implement debounced text filter and date parse/filter.
+- [x] Implement sort toggles and visual states.
+- [x] Update result count and ARIA live region.
+- [x] Add minimal CSS for controls aligning with dark theme.
 - [ ] Unit test: date parse util; integration smoke with sample rows.
 - [ ] QA with 50–500 rows for responsiveness.
 

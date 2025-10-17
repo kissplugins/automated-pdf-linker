@@ -4,6 +4,21 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 
 
+
+## [3.1.6] - 2025-10-17
+
+### Added
+- Phase 1 Folder Viewer UI: client-side search, date filter, and sort toggles.
+  - Single flexible search input filters filename/path/folder (debounced)
+  - Partial/fuzzy filename matching (lightweight subsequence/contains)
+  - Date filter accepts `YYYY-MM-DD` and `MM-DD-YY`/`MM/DD/YY` and matches by Modified Date
+  - Sort by Date and Sort by Name toggles with visual state
+  - Live “Showing X of Y” counter updates as filters change
+
+### Notes
+- DRY preserved: totals continue to use IndexBuilder::get_index_stats().
+- Admin page hook detection remains slug-based to support both Tools and Settings screens.
+
 ## [3.1.4] - 2025-10-17
 ## [3.1.5] - 2025-10-17
 
