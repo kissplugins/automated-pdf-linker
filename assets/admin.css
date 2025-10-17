@@ -212,8 +212,28 @@
     .kapl-test-result {
         padding: 10px;
     }
-    
+
     .kapl-test-summary {
         padding: 12px;
     }
+}
+
+
+/* High-contrast total files summary for Folder Viewer */
+.kapl-folder-viewer__total{
+    margin: 8px 20px 12px;
+    padding: 6px 10px;
+    background: #111;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Row number prefix styling */
+.kapl-rownum{
+    color: #9ecbff;
+    font-weight: 700;
+    margin-right: 4px;
 }

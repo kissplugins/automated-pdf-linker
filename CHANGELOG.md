@@ -4,6 +4,15 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 
 
+## [3.1.4] - 2025-10-17
+
+### Improved
+- High-contrast styling for the “Total files” summary in the Folder Viewer to improve legibility on dark UI.
+
+### Changed
+- DRY: The Folder Viewer now re-uses IndexBuilder::get_index_stats() to display the same total file count shown near the Rebuild Index status.
+- Admin stylesheet version bumped to 3.0.3 to refresh CSS in browsers.
+
 ## [3.1.3] - 2025-10-17
 
 ### Added

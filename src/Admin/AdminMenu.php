@@ -193,13 +193,9 @@ class AdminMenu {
             return;
         }
 
-        // Compute total number of files across all selected directories (for summary at top).
-        $total_files_count = 0;
-        foreach ( $selected_directories as $dir_for_count ) {
-            if ( isset( $grouped_files[ $dir_for_count ] ) && is_array( $grouped_files[ $dir_for_count ] ) ) {
-                $total_files_count += count( $grouped_files[ $dir_for_count ] );
-            }
-        }
+        // DRY: Re-use IndexBuilder::get_index_stats() so the count matches the status panel and rebuild message.
+        $index_stats = $this->settings->get_index_builder()->get_index_stats();
+        $total_files_count = isset( $index_stats['total_files'] ) ? (int) $index_stats['total_files'] : 0;
 
         $upload_dir_info = wp_upload_dir();
         $base_url = trailingslashit( $upload_dir_info['baseurl'] );
