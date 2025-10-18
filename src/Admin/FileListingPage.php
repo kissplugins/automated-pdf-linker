@@ -49,12 +49,16 @@ class FileListingPage {
         // Build data from the existing index (DRY: reuse IndexBuilder)
         $index = $this->plugin->get_index_builder()->get_index() ?: [];
         $files = [];
+        $upload_info = \wp_upload_dir();
+        $baseurl = isset($upload_info['baseurl']) ? trailingslashit($upload_info['baseurl']) : '';
         foreach ( $index as $item ) {
             $filename     = isset($item['filename']) ? (string) $item['filename'] : ( isset($item['path']) ? basename((string)$item['path']) : '' );
             $modified_ts  = isset($item['modified']) && is_numeric($item['modified']) ? (int) $item['modified'] : null;
             $modified_iso = $modified_ts ? date('c', $modified_ts) : date('c', 0);
             $size_bytes   = isset($item['size_bytes']) && is_numeric($item['size_bytes']) ? (int) $item['size_bytes'] : 0;
-            $files[] = [ 'name' => $filename, 'size' => $size_bytes, 'modified' => $modified_iso ];
+            $rel_path     = isset($item['path']) ? ltrim((string)$item['path'], '/\\') : '';
+            $url          = $baseurl && $rel_path ? $baseurl . $rel_path : '';
+            $files[] = [ 'name' => $filename, 'size' => $size_bytes, 'modified' => $modified_iso, 'url' => $url ];
         }
 
         // Determine debug toggle (re-use same logic as Settings page)

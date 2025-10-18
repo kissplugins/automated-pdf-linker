@@ -108,21 +108,24 @@ class AdminMenu {
 
             <hr>
 
-            <?php $this->render_folder_file_listing_viewer(); ?>
+            <h2><?php \esc_html_e( 'Folder File Listing Viewer', 'kiss-automated-pdf-linker' ); ?></h2>
+            <p><?php \esc_html_e( 'Open the dedicated, searchable file listing page.', 'kiss-automated-pdf-linker' ); ?></p>
+            <p>
+                <a href="<?php echo \esc_url( \admin_url( 'tools.php?page=' . \KissPlugins\AutomatedPdfLinker\Admin\FileListingPage::PAGE_SLUG ) ); ?>" class="button button-secondary">
+                    <?php \esc_html_e( 'View Folder File Listing', 'kiss-automated-pdf-linker' ); ?>
+                </a>
+            </p>
 
             <hr>
 
             <h2><?php \esc_html_e( 'System Self-Tests', 'kiss-automated-pdf-linker' ); ?></h2>
-            <p><?php \esc_html_e( 'Run diagnostic tests to verify plugin functionality and catch potential issues.', 'kiss-automated-pdf-linker' ); ?></p>
-
             <p>
-                <strong><?php \esc_html_e( 'Run Diagnostic Tests:', 'kiss-automated-pdf-linker' ); ?></strong>
                 <a href="<?php echo \esc_url( \admin_url( 'tools.php?page=kapl-self-test' ) ); ?>" class="button button-secondary">
-                    <?php \esc_html_e( 'Link to new page', 'kiss-automated-pdf-linker' ); ?>
+                    <?php \esc_html_e( 'Run Self-Tests', 'kiss-automated-pdf-linker' ); ?>
                 </a>
             </p>
             <p class="description">
-                <?php \esc_html_e( 'Click to run comprehensive diagnostic tests. This will verify that all plugin components are working correctly.', 'kiss-automated-pdf-linker' ); ?>
+                <?php \esc_html_e( 'Quick checks to verify plugin setup.', 'kiss-automated-pdf-linker' ); ?>
             </p>
 
         </div>

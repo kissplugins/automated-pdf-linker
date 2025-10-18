@@ -4,6 +4,21 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 
 
+## [3.1.8] - 2025-10-18
+## [3.1.9] - 2025-10-18
+
+### Changed
+- Simplified the System Self-Tests section copy and button on the Settings page.
+
+
+
+### Added
+- Filenames in the File Listing are now clickable and open the PDF in a new tab.
+
+### Changed
+- Tightened search: uses tokenized, case-insensitive substring matching (all query words must appear), reducing overly fuzzy matches like "air" that previously matched many unrelated files.
+
+
 ## [3.1.7] - 2025-10-18
 
 ### Fixed

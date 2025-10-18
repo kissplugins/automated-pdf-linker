@@ -34,10 +34,12 @@ class FileListingViewer {
             $name     = \sanitize_text_field( \wp_check_invalid_utf8( $name, true ) );
             $size     = isset( $f['size'] ) ? (int) $f['size'] : 0;
             $modified = isset( $f['modified'] ) ? (string) $f['modified'] : date( 'c', 0 );
+            $url      = isset( $f['url'] ) ? \esc_url_raw( (string) $f['url'] ) : '';
             $normalized[] = [
                 'name'     => $name,
                 'size'     => $size,
                 'modified' => $modified,
+                'url'      => $url,
             ];
         }
 
@@ -94,7 +96,13 @@ class FileListingViewer {
                                 <?php foreach ( $normalized as $i => $f ) : ?>
                                     <tr>
                                         <td class="kapl-flv__rownum"><?php echo intval( $i + 1 ); ?></td>
-                                        <td class="kapl-flv__name"><?php echo \esc_html( $f['name'] ); ?></td>
+                                        <td class="kapl-flv__name">
+                                            <?php if ( ! empty( $f['url'] ) ) : ?>
+                                                <a href="<?php echo esc_url( $f['url'] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo \esc_html( $f['name'] ); ?></a>
+                                            <?php else : ?>
+                                                <?php echo \esc_html( $f['name'] ); ?>
+                                            <?php endif; ?>
+                                        </td>
                                         <td><?php echo \esc_html( \date_i18n( $opts['date_format'], strtotime( $f['modified'] ) ) ); ?></td>
                                         <td class="kapl-flv__size"><?php echo \esc_html( \size_format( max( 0, (int) $f['size'] ) ) ); ?></td>
                                     </tr>
@@ -151,14 +159,18 @@ class FileListingViewer {
                         qsa(`#${id}-tbl th[data-sort]`).forEach(th => th.addEventListener('click', ()=>{ this.sort(th.dataset.sort); }));
                         const dbgBtn = qs(`#${id}-dbg-toggle`); if(dbgBtn){ dbgBtn.addEventListener('click',()=>{ const el=qs(`#${id}-dbg`); if(el){ el.style.display = (el.style.display==='block'?'none':'block'); } }); }
                     }
-                    fuzzy(text, query){
-                        text = (text||'').toLowerCase(); query=(query||'').toLowerCase();
-                        let j=0; for(let i=0;i<text.length && j<query.length;i++){ if(text[i]===query[j]){ j++; } }
-                        return j===query.length;
+                    // Match if all tokens from query exist as contiguous substrings (case-insensitive)
+                    tokens(q){ return (q||'').trim().toLowerCase().split(/\s+/).filter(Boolean); }
+                    matchesAllTokens(text, q){
+                        const hay = (text||'').toLowerCase();
+                        const toks = this.tokens(q);
+                        if (toks.length===0) return true;
+                        return toks.every(t => hay.indexOf(t) !== -1);
                     }
+                    escapeRe(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
                     applyFilters(){
                         this.filtered = this.files.filter(f => {
-                            if(this.q && !this.fuzzy(f.name, this.q)) return false;
+                            if(this.q && !this.matchesAllTokens(f.name, this.q)) return false;
                             if(this.date){
                                 const d = new Date(f.modified).toISOString().split('T')[0];
                                 if(d !== this.date) return false;
@@ -185,13 +197,14 @@ class FileListingViewer {
                     }
                     sizeFmt(bytes){ if(!bytes) return '0 B'; const k=1024,s=['B','KB','MB','GB','TB']; const i=Math.floor(Math.log(bytes)/Math.log(k)); return (bytes/Math.pow(k,i)).toFixed(2)+' '+s[i]; }
                     dateFmt(iso){ const d=new Date(iso); return d.toLocaleString(); }
-                    highlight(name, q){ if(!q) return name; const re=new RegExp('('+q.split('').join('.*?')+')','gi'); return (name||'').replace(re,'<span class="kapl-flv__hl">$1</span>'); }
+                    highlight(name, q){ if(!q) return name; let out = (name||''); const toks=this.tokens(q); toks.forEach(t=>{ const re=new RegExp(this.escapeRe(t),'gi'); out = out.replace(re,'<span class="kapl-flv__hl">$&</span>'); }); return out; }
                     render(){
                         const tb = qs(`#${id}-tbody`);
                         if(!tb){ return; }
-                        if(this.filtered.length===0){ tb.innerHTML = `<tr><td colspan="4" class="kapl-flv__nores"><?php echo \esc_html__( 'No files found matching your criteria', 'kiss-automated-pdf-linker' ); ?></td></tr>`; return; }
+                        if(this.filtered.length===0){ tb.innerHTML = `<tr><td colspan=\"4\" class=\"kapl-flv__nores\"><?php echo \esc_html__( 'No files found matching your criteria', 'kiss-automated-pdf-linker' ); ?></td></tr>`; return; }
                         tb.innerHTML = this.filtered.map((f,i)=>{
-                            return `<tr><td class="kapl-flv__rownum">${i+1}</td><td class="kapl-flv__name">${this.highlight(f.name,this.q)}</td><td>${this.dateFmt(f.modified)}</td><td class="kapl-flv__size">${this.sizeFmt(parseInt(f.size||0,10))}</td></tr>`;
+                            const nameHtml = f.url ? `<a href=\"${f.url}\" target=\"_blank\" rel=\"noopener noreferrer\">${this.highlight(f.name,this.q)}</a>` : this.highlight(f.name,this.q);
+                            return `<tr><td class=\"kapl-flv__rownum\">${i+1}</td><td class=\"kapl-flv__name\">${nameHtml}</td><td>${this.dateFmt(f.modified)}</td><td class=\"kapl-flv__size\">${this.sizeFmt(parseInt(f.size||0,10))}</td></tr>`;
                         }).join('');
                     }
                     updateStats(){ const total=this.files.length, vis=this.filtered.length; const el=qs(`#${id}-stats`); el.textContent = (this.q||this.date) ? `<?php echo \esc_js( \__( 'Showing', 'kiss-automated-pdf-linker' ) ); ?> ${vis} <?php echo \esc_js( \__( 'of', 'kiss-automated-pdf-linker' ) ); ?> ${total} <?php echo \esc_js( \__( 'files (filtered)', 'kiss-automated-pdf-linker' ) ); ?>` : `<?php echo \esc_js( \__( 'Showing all', 'kiss-automated-pdf-linker' ) ); ?> ${total} <?php echo \esc_js( \__( 'files', 'kiss-automated-pdf-linker' ) ); ?>`; }
