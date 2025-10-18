@@ -9,11 +9,18 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 ## [3.1.10] - 2025-10-18
 ## [3.1.11] - 2025-10-18
 
+
+## [3.1.13] - 2025-10-18
+
+### Changed
+- Moved plugin admin pages to a dedicated top-level menu: “KISS PDF Linker”, with submenus for Settings, File Listing, and Self-Tests. Updated internal links and asset loading accordingly.
+
 ## [3.1.12] - 2025-10-18
 
 ### Fixed
 - Self-Test: Cache Manager test is now non-destructive and performs a safe roundtrip check instead of overwriting the index with a single-item fixture.
 - Self-Test: Viewer Empty State assertion relaxed to only require the friendly "No files found matching your criteria" message (no longer fails on presence/absence of transient "Initializing/Loading" markers).
+
 
 
 ### Added

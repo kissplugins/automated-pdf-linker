@@ -294,7 +294,7 @@ class Plugin {
     public function add_settings_link( array $links ): array {
         $settings_link = sprintf(
             '<a href="%s">%s</a>',
-            esc_url( admin_url( 'tools.php?page=kiss-pdf-linker-settings' ) ),
+            esc_url( admin_url( 'admin.php?page=kiss-pdf-linker-settings' ) ),
             esc_html__( 'Settings', 'kiss-automated-pdf-linker' )
         );
 

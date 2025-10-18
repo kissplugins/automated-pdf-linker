@@ -25,12 +25,13 @@ class FileListingPage {
     }
 
     /**
-     * Register admin menu item under Tools.
+     * Register admin submenu under KISS PDF Linker.
      */
     public function add_admin_menu(): void {
-        \add_management_page(
+        \add_submenu_page(
+            Settings::SETTINGS_SLUG,
             \__( 'KISS PDF Linker File Listing', 'kiss-automated-pdf-linker' ),
-            \__( 'KISS PDF Linker File Listing', 'kiss-automated-pdf-linker' ),
+            \__( 'File Listing', 'kiss-automated-pdf-linker' ),
             'manage_options',
             self::PAGE_SLUG,
             [ $this, 'render_page' ]
@@ -101,7 +102,7 @@ class FileListingPage {
             . '</p>';
 
         if ( empty( $files ) ) {
-            $settings_url = esc_url( admin_url( 'tools.php?page=' . \KissPlugins\AutomatedPdfLinker\Admin\Settings::SETTINGS_SLUG ) );
+            $settings_url = esc_url( admin_url( 'admin.php?page=' . \KissPlugins\AutomatedPdfLinker\Admin\Settings::SETTINGS_SLUG ) );
             echo '<div class="notice notice-info"><p>'
                 . esc_html__( 'No indexed files found. To populate this list, select folders and rebuild the index on the settings page.', 'kiss-automated-pdf-linker' )
                 . ' <a href="' . $settings_url . '" class="button button-secondary">' . esc_html__( 'Go to Settings', 'kiss-automated-pdf-linker' ) . '</a>'
