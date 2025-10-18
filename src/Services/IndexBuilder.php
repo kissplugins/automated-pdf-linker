@@ -54,6 +54,31 @@ class IndexBuilder {
     }
 
     /**
+     * Check if index needs migration and rebuild if necessary.
+     *
+     * @param array $selected_directories Array of directory names to scan.
+     * @return bool True if migration was performed, false otherwise.
+     */
+    public function check_and_migrate_index( array $selected_directories ): bool {
+        if ( ! $this->cache_manager->needs_index_migration() ) {
+            return false;
+        }
+
+        $this->logger->info( 'Index migration detected. Rebuilding index with new metadata fields.' );
+
+        // Rebuild the index to include new metadata fields
+        $result = $this->build_index( $selected_directories );
+
+        if ( is_wp_error( $result ) ) {
+            $this->logger->error( 'Index migration failed: ' . $result->get_error_message() );
+            return false;
+        }
+
+        $this->logger->info( "Index migration completed successfully. Indexed {$result} files with new metadata." );
+        return true;
+    }
+
+    /**
      * Build PDF index from selected directories.
      *
      * @param array $selected_directories Array of directory names to scan.
@@ -71,9 +96,9 @@ class IndexBuilder {
 
         try {
             $pdf_files = $this->file_scanner->scan_directories( $selected_directories );
-            
+
             $update_success = $this->cache_manager->update_index( $pdf_files );
-            
+
             if ( ! $update_success ) {
                 $error_message = __( 'Failed to save the PDF index to the database.', 'kiss-automated-pdf-linker' );
                 $this->logger->error( $error_message );
@@ -82,16 +107,16 @@ class IndexBuilder {
 
             $file_count = count( $pdf_files );
             $this->logger->info( "PDF index build completed successfully. Indexed {$file_count} files." );
-            
+
             return $file_count;
-            
+
         } catch ( \Exception $e ) {
             $error_message = sprintf(
                 /* translators: %s: Error message */
                 __( 'Error building PDF index: %s', 'kiss-automated-pdf-linker' ),
                 $e->getMessage()
             );
-            
+
             $this->logger->error( $error_message );
             return new WP_Error( 'build_error', $error_message );
         }
@@ -216,5 +241,44 @@ class IndexBuilder {
      */
     public function get_available_directories(): array {
         return $this->file_scanner->get_available_directories();
+    }
+
+    /**
+     * Group index entries by their top-level directory.
+     *
+     * @param array $selected_directories Directories that should be included in the grouping.
+     * @return array<string, array> Array keyed by directory names containing the matching index entries.
+     */
+    public function get_index_by_directory( array $selected_directories ): array {
+        $index = $this->get_index() ?? [];
+
+        if ( empty( $selected_directories ) || empty( $index ) ) {
+            return [];
+        }
+
+        $grouped = [];
+
+        foreach ( $selected_directories as $directory ) {
+            $grouped[ $directory ] = [];
+        }
+
+        foreach ( $index as $item ) {
+            if ( ! isset( $item['path'] ) ) {
+                continue;
+            }
+
+            $relative_path = (string) $item['path'];
+            $top_level_dir = strstr( $relative_path, '/', true );
+
+            if ( false === $top_level_dir ) {
+                $top_level_dir = $relative_path;
+            }
+
+            if ( isset( $grouped[ $top_level_dir ] ) ) {
+                $grouped[ $top_level_dir ][] = $item;
+            }
+        }
+
+        return $grouped;
     }
 }
