@@ -7,6 +7,19 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 ## [3.1.8] - 2025-10-18
 ## [3.1.9] - 2025-10-18
 ## [3.1.10] - 2025-10-18
+## [3.1.11] - 2025-10-18
+
+## [3.1.12] - 2025-10-18
+
+### Fixed
+- Self-Test: Cache Manager test is now non-destructive and performs a safe roundtrip check instead of overwriting the index with a single-item fixture.
+- Self-Test: Viewer Empty State assertion relaxed to only require the friendly "No files found matching your criteria" message (no longer fails on presence/absence of transient "Initializing/Loading" markers).
+
+
+### Added
+- Three new Self-Tests to prevent regressions in the File Listing page and viewer: toolbar rebuild button/nonce/spinner presence, clickable filename anchors, and empty-state rendering.
+
+
 
 ### Added
 - “Rebuild PDF Index Now” button to the top-right of the File Listing page, including nonce and server-side handling. Success/error notices are shown inline.
