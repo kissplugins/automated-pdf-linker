@@ -13,6 +13,7 @@ use KissPlugins\AutomatedPdfLinker\Admin\Settings;
 use KissPlugins\AutomatedPdfLinker\Admin\AdminMenu;
 use KissPlugins\AutomatedPdfLinker\Admin\SelfTestPage;
 use KissPlugins\AutomatedPdfLinker\Admin\SelfTest;
+use KissPlugins\AutomatedPdfLinker\Admin\FileListingPage;
 use KissPlugins\AutomatedPdfLinker\Services\IndexBuilder;
 use KissPlugins\AutomatedPdfLinker\Utils\Logger;
 
@@ -69,6 +70,15 @@ class AdminServiceProvider extends ServiceProvider {
 
         $this->container->bind( SelfTestPage::class, function( $container ) {
             return $container->get( 'self_test_page' );
+        } );
+
+        // Register FileListingPage
+        $this->container->bind( 'file_listing_page', function( $container ) {
+            return new FileListingPage( $container->get( 'plugin' ) );
+        } );
+
+        $this->container->bind( FileListingPage::class, function( $container ) {
+            return $container->get( 'file_listing_page' );
         } );
     }
 }

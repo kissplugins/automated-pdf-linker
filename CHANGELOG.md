@@ -4,6 +4,35 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 
 
+## [3.1.7] - 2025-10-18
+
+### Fixed
+- File Listing page could get stuck on “Loading…” if admin JS errors elsewhere prevented our inline script from running. The viewer now server-renders initial rows so data is visible even before JS executes.
+
+### Improved
+- Added top-level try/catch around viewer boot to surface an inline error row if initialization fails.
+- Added an early "Initializing…" marker so it’s obvious when our script starts running.
+
+
+## [3.1.6] - 2025-10-18
+
+### Fixed
+- File Listing page: rows not rendering in some environments due to client-side errors when data was null or DOM controls were unavailable. The viewer now guards against null/undefined and missing elements and always renders a friendly "No files found" row if empty.
+
+### Changed
+- Replaced raw viewer include with a WP‑friendly, namespaced component `Admin\Components\FileListingViewer` and updated the Tools page to call it directly.
+- Added an informational notice on the File Listing page when the index is empty, with a quick link to the Settings page to rebuild the index.
+
+
+## [3.1.5] - 2025-10-17
+
+### Added
+- New Tools page: "KISS PDF Linker File Listing" — a flat, searchable and sortable file list using the universal viewer component. Includes fuzzy name search, date filter, and sortable columns.
+
+### Notes
+- DRY: Reuses IndexBuilder data to populate the viewer. No duplicate scanning logic.
+- The viewer is self-styled and does not rely on the settings screen assets.
+
 ## [3.1.4] - 2025-10-17
 
 ### Improved
