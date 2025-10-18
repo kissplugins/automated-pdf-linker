@@ -91,10 +91,11 @@ class FileListingPage {
             . '<a href="' . $kapl_debug_toggle_url . '" class="button button-small">' . ( $kapl_debug_enabled ? esc_html__( 'Disable Debug', 'kiss-automated-pdf-linker' ) : esc_html__( 'Enable Debug', 'kiss-automated-pdf-linker' ) ) . '</a>'
             . '</span>'
             . '<span style="margin-left:auto;">'
-            . '<form method="post" action="" style="display:inline-block;">'
+            . '<form id="kapl-rebuild-index-form" method="post" action="" style="display:inline-block;">'
             . wp_nonce_field( 'kapl_rebuild_index_action', 'kapl_rebuild_index_nonce', true, false )
             . '<input type="hidden" name="kapl_rebuild_index" value="1" />'
-            . '<button type="submit" class="button button-primary">' . esc_html__( 'Rebuild PDF Index Now', 'kiss-automated-pdf-linker' ) . '</button>'
+            . '<button id="kapl-rebuild-index-btn" type="submit" class="button button-primary">' . esc_html__( 'Rebuild PDF Index Now', 'kiss-automated-pdf-linker' ) . '</button>'
+            . '<span id="kapl-rebuild-index-spinner" class="spinner" style="float:none;margin:0 0 0 8px;"></span>'
             . '</form>'
             . '</span>'
             . '</p>';
@@ -115,6 +116,8 @@ class FileListingPage {
                 'date_format' => get_option('date_format') . ' ' . get_option('time_format'),
             ]
         );
+
+        echo '<script>(function(){try{var f=document.getElementById("kapl-rebuild-index-form");if(!f){return;}f.addEventListener("submit",function(){var b=document.getElementById("kapl-rebuild-index-btn");if(b){b.disabled=true;b.classList.add("is-busy");b.setAttribute("aria-busy","true");}var s=document.getElementById("kapl-rebuild-index-spinner");if(s){s.classList.add("is-active");}});}catch(e){if(window.console&&console.debug){console.debug("KAPL rebuild spinner init error:",e);}}})();</script>';
 
         echo '</div>';
     }

@@ -10,6 +10,8 @@ All notable changes to the KISS Automated PDF Linker plugin will be documented i
 
 ### Added
 - “Rebuild PDF Index Now” button to the top-right of the File Listing page, including nonce and server-side handling. Success/error notices are shown inline.
+- Shows a progress spinner on the File Listing page while a rebuild request is being processed.
+
 
 
 
