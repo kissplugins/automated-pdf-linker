@@ -46,6 +46,11 @@ class FileListingPage {
             return;
         }
 
+        // Allow rebuild action via POST (reuse Settings logic for DRY and consistent notices)
+        $this->plugin->get_settings()->handle_index_rebuild();
+
+        // Build data from the existing (possibly just rebuilt) index
+
         // Build data from the existing index (DRY: reuse IndexBuilder)
         $index = $this->plugin->get_index_builder()->get_index() ?: [];
         $files = [];
@@ -78,8 +83,21 @@ class FileListingPage {
 
         echo '<div class="wrap">';
         echo '<h1>' . esc_html__( 'KISS PDF Linker File Listing', 'kiss-automated-pdf-linker' ) . '</h1>';
+        // Show rebuild notices, if any
+        \settings_errors( 'kapl_rebuild_status' );
         echo '<p>' . esc_html__( 'Search by fuzzy filename or filter by date; click column headers to sort.', 'kiss-automated-pdf-linker' ) . '</p>';
-        echo '<p><a href="' . $kapl_debug_toggle_url . '" class="button button-small">' . ( $kapl_debug_enabled ? esc_html__( 'Disable Debug', 'kiss-automated-pdf-linker' ) : esc_html__( 'Enable Debug', 'kiss-automated-pdf-linker' ) ) . '</a></p>';
+        echo '<p style="display:flex; gap:10px; justify-content:space-between; align-items:center;">'
+            . '<span>'
+            . '<a href="' . $kapl_debug_toggle_url . '" class="button button-small">' . ( $kapl_debug_enabled ? esc_html__( 'Disable Debug', 'kiss-automated-pdf-linker' ) : esc_html__( 'Enable Debug', 'kiss-automated-pdf-linker' ) ) . '</a>'
+            . '</span>'
+            . '<span style="margin-left:auto;">'
+            . '<form method="post" action="" style="display:inline-block;">'
+            . wp_nonce_field( 'kapl_rebuild_index_action', 'kapl_rebuild_index_nonce', true, false )
+            . '<input type="hidden" name="kapl_rebuild_index" value="1" />'
+            . '<button type="submit" class="button button-primary">' . esc_html__( 'Rebuild PDF Index Now', 'kiss-automated-pdf-linker' ) . '</button>'
+            . '</form>'
+            . '</span>'
+            . '</p>';
 
         if ( empty( $files ) ) {
             $settings_url = esc_url( admin_url( 'tools.php?page=' . \KissPlugins\AutomatedPdfLinker\Admin\Settings::SETTINGS_SLUG ) );

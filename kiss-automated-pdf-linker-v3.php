@@ -3,7 +3,7 @@
  * Plugin Name:       KISS Automated PDF Linker (PSR4)
  * Plugin URI:        https://github.com/kissplugins/KISS-automated-pdf-linker
  * Description:       Scans selected upload directories for PDF files and provides a shortcode [kiss_pdf name="filename"] to link to them using fuzzy matching.
- * Version:           3.1.9
+ * Version:           3.1.10
  * Requires at least: 5.2
  * Requires PHP:      7.4
  * Author:            KISS / Neochrome, Inc.
@@ -99,7 +99,7 @@ register_deactivation_hook( __FILE__, 'kapl_deactivate_plugin' );
 
 // Backward compatibility constants for any external code that might reference them
 if ( ! defined( 'KAPL_VERSION' ) ) {
-    define( 'KAPL_VERSION', '3.1.9' );
+    define( 'KAPL_VERSION', '3.1.10' );
 }
 if ( ! defined( 'KAPL_PLUGIN_DIR' ) ) {
     define( 'KAPL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
