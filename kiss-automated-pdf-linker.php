@@ -137,6 +137,25 @@ function kapl_register_settings() {
         'kapl_pdf_matching_section'           // Section ID where field appears
     );
 
+	// Add Debug Logging section
+	add_settings_section(
+		'kapl_debug_section',
+		__( 'Debug Logging', 'kiss-automated-pdf-linker' ),
+		function() {
+			echo '<p>' . esc_html__( 'Enable or disable debug logging for troubleshooting. Logs go to error_log().', 'kiss-automated-pdf-linker' ) . '</p>';
+		},
+		KAPL_SETTINGS_SLUG
+	);
+
+	add_settings_field(
+		'kapl_debug_logging',
+		__( 'Enable Debug Logging:', 'kiss-automated-pdf-linker' ),
+		'kapl_debug_logging_field_callback',
+		KAPL_SETTINGS_SLUG,
+		'kapl_debug_section'
+	);
+
+
 	
 }
 
@@ -173,6 +192,8 @@ function kapl_sanitize_settings( $input ) {
 
     // Sanitize the use_product_title_match checkbox
     $sanitized_input['use_product_title_match'] = isset( $input['use_product_title_match'] ) ? true : false;
+
+	$sanitized_input['debug_logging'] = isset( $input['debug_logging'] ) ? true : false;
 
 	// Add sanitization for future settings here...
 
@@ -586,7 +607,7 @@ function kapl_get_pdf_index() {
 
 	if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $index_data ) ) {
         // Log error if JSON is invalid
-        error_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
+        kapl_log("KAPL: Error decoding PDF index JSON - " . json_last_error_msg());
 		return null; // Invalid JSON or not an array
 	}
 
@@ -608,7 +629,7 @@ function kapl_update_pdf_index( array $index_data ) {
 	$index_json = wp_json_encode( $index_data ); // Use wp_json_encode for better compatibility
 
 	if ( $index_json === false ) {
-        error_log("KAPL: Failed to encode PDF index to JSON.");
+        kapl_log("KAPL: Failed to encode PDF index to JSON.");
 		return false; // Failed to encode
 	}
 
@@ -772,7 +793,7 @@ function kapl_normalize_filename( $filename ) {
     // 5 ‑ trim stray leading/trailing dashes.
     $filename = trim( $filename, '-' );
 
-    error_log("KAPL: Normalized filename: " . $filename);
+    kapl_log("KAPL: Normalized filename: " . $filename);
 
     return $filename;
 }
@@ -966,4 +987,29 @@ function kapl_strain_tab_content() {
 	}
 	
 	echo '</div>';
+}
+
+function kapl_debug_logging_field_callback() {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, ['debug_logging' => false] );
+    $debug = isset( $settings['debug_logging'] ) ? (bool) $settings['debug_logging'] : false;
+    ?>
+    <label for="kapl_debug_logging">
+        <input 
+            type="checkbox"
+            id="kapl_debug_logging"
+            name="<?php echo esc_attr( KAPL_SETTINGS_OPTION_NAME ); ?>[debug_logging]"
+            value="1"
+            <?php checked( $debug, true ); ?>
+        />
+        <?php esc_html_e( 'Write debug messages to error_log() for troubleshooting.', 'kiss-automated-pdf-linker' ); ?>
+    </label>
+    <?php
+}
+
+function kapl_log( $message ) {
+    $settings = get_option( KAPL_SETTINGS_OPTION_NAME, [] );
+
+    if ( isset( $settings['debug_logging'] ) && $settings['debug_logging'] ) {
+        kapl_log( "KAPL DEBUG: " . print_r( $message, true ) );
+    }
 }
