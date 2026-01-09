@@ -32,7 +32,11 @@ class Assets {
          * - Using a slug substring match (strpos) is deliberate and resilient: it works for Tools now and will also work if
          *   we ever move the screen under Settings (yielding `settings_page_{slug}`).
          */
-        if ( false === strpos( (string) $hook, Settings::SETTINGS_SLUG ) ) {
+        if (
+            false === strpos( (string) $hook, Settings::SETTINGS_SLUG )
+            && false === strpos( (string) $hook, FileListingPage::PAGE_SLUG )
+            && false === strpos( (string) $hook, SelfTestPage::PAGE_SLUG )
+        ) {
             return;
         }
 

@@ -11,6 +11,7 @@ namespace KissPlugins\AutomatedPdfLinker\Core;
 use KissPlugins\AutomatedPdfLinker\Admin\Settings;
 use KissPlugins\AutomatedPdfLinker\Admin\AdminMenu;
 use KissPlugins\AutomatedPdfLinker\Admin\SelfTestPage;
+use KissPlugins\AutomatedPdfLinker\Admin\FileListingPage;
 use KissPlugins\AutomatedPdfLinker\Admin\Assets as AdminAssets;
 use KissPlugins\AutomatedPdfLinker\Frontend\Shortcode;
 use KissPlugins\AutomatedPdfLinker\Frontend\Assets as FrontendAssets;
@@ -93,6 +94,13 @@ class Plugin {
      * @var SelfTestPage
      */
     private $self_test_page;
+
+    /**
+     * File Listing page instance.
+     *
+     * @var FileListingPage
+     */
+    private $file_listing_page;
 
     /**
      * Shortcode handler instance.
@@ -215,8 +223,9 @@ class Plugin {
             $this->index_builder  = $this->container->get( IndexBuilder::class );
             $this->settings       = $this->container->get( Settings::class );
             $this->admin_menu     = $this->container->get( AdminMenu::class );
-            $this->self_test_page = $this->container->get( SelfTestPage::class );
-            $this->shortcode      = $this->container->get( Shortcode::class );
+            $this->self_test_page   = $this->container->get( SelfTestPage::class );
+            $this->file_listing_page = $this->container->get( FileListingPage::class );
+            $this->shortcode        = $this->container->get( Shortcode::class );
         } catch ( \Exception $e ) {
             // Fallback to manual initialization
             error_log( 'KISS PDF Linker: Service resolution failed - ' . $e->getMessage() );
@@ -235,8 +244,9 @@ class Plugin {
         $this->index_builder = new IndexBuilder( $this->cache_manager, $this->logger );
         $this->settings       = new Settings( $this->index_builder, $this->logger );
         $this->admin_menu     = new AdminMenu( $this->settings );
-        $this->self_test_page = new SelfTestPage( $this );
-        $this->shortcode      = new Shortcode( $this->cache_manager, $this->logger );
+        $this->self_test_page   = new SelfTestPage( $this );
+        $this->file_listing_page = new FileListingPage( $this );
+        $this->shortcode        = new Shortcode( $this->cache_manager, $this->logger );
     }
 
     /**
@@ -254,6 +264,7 @@ class Plugin {
         \add_action( 'admin_init', [ $this->settings, 'register_settings' ] );
         \add_action( 'admin_menu', [ $this->admin_menu, 'add_admin_menu' ] );
         \add_action( 'admin_menu', [ $this->self_test_page, 'add_admin_menu' ] );
+        \add_action( 'admin_menu', [ $this->file_listing_page, 'add_admin_menu' ] );
         \add_action( 'wp_enqueue_scripts', [ FrontendAssets::class, 'enqueue_styles' ] );
         \add_action( 'admin_enqueue_scripts', [ AdminAssets::class, 'enqueue_scripts' ] );
         \add_shortcode( 'kiss_pdf', [ $this->shortcode, 'handle' ] );
@@ -283,7 +294,7 @@ class Plugin {
     public function add_settings_link( array $links ): array {
         $settings_link = sprintf(
             '<a href="%s">%s</a>',
-            esc_url( admin_url( 'tools.php?page=kiss-pdf-linker-settings' ) ),
+            esc_url( admin_url( 'admin.php?page=kiss-pdf-linker-settings' ) ),
             esc_html__( 'Settings', 'kiss-automated-pdf-linker' )
         );
 

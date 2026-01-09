@@ -46,9 +46,10 @@ class SelfTestPage {
      * @return void
      */
     public function add_admin_menu(): void {
-        \add_management_page(
+        \add_submenu_page(
+            Settings::SETTINGS_SLUG,
             \__( 'KISS PDF Linker Self-Tests', 'kiss-automated-pdf-linker' ),
-            \__( 'KISS PDF Self-Tests', 'kiss-automated-pdf-linker' ),
+            \__( 'Self-Tests', 'kiss-automated-pdf-linker' ),
             'manage_options',
             self::PAGE_SLUG,
             [ $this, 'render_page' ]
@@ -278,7 +279,7 @@ class SelfTestPage {
                     <button type="submit" name="kapl_run_selftest" class="button button-secondary">
                         🔄 Run Tests Again
                     </button>
-                    <a href="<?php echo \esc_url( \admin_url( 'tools.php?page=' . self::PAGE_SLUG ) ); ?>" class="button">
+                    <a href="<?php echo \esc_url( \admin_url( 'admin.php?page=' . self::PAGE_SLUG ) ); ?>" class="button">
                         ← Back to Test Form
                     </a>
                 </p>

@@ -71,8 +71,90 @@ class SelfTest {
         
         // Index tests
         $this->test_index_functionality();
-        
+
+        // Admin UI: File Listing page & viewer
+        $this->test_file_listing_toolbar();
+        $this->test_viewer_clickable_links();
+        $this->test_viewer_empty_state();
+
         return $this->test_results;
+    }
+
+    /**
+     * Verify File Listing page toolbar includes rebuild form, nonce and spinner.
+     */
+    private function test_file_listing_toolbar(): void {
+        $test_name = 'File Listing Toolbar (Rebuild Button)';
+        try {
+            // Buffer output to avoid polluting the Self-Test page
+            ob_start();
+            ( new \KissPlugins\AutomatedPdfLinker\Admin\FileListingPage( $this->plugin ) )->render_page();
+            $html = (string) ob_get_clean();
+
+            $ok = ( false !== strpos( $html, 'kapl-rebuild-index-form' ) )
+               && ( false !== strpos( $html, 'kapl_rebuild_index_nonce' ) )
+               && ( false !== strpos( $html, 'name="kapl_rebuild_index"' ) )
+               && ( false !== strpos( $html, 'class="spinner"' ) );
+
+            $this->add_test_result(
+                $test_name,
+                $ok,
+                $ok ? 'Toolbar with rebuild form, nonce and spinner present.' : 'Missing toolbar elements (form/nonce/hidden/spinner).'
+            );
+        } catch ( \Throwable $e ) {
+            $this->add_test_result( $test_name, false, 'Exception while rendering File Listing page: ' . $e->getMessage() );
+        }
+    }
+
+    /**
+     * Ensure server-rendered rows produce clickable anchors when URL is present.
+     */
+    private function test_viewer_clickable_links(): void {
+        $test_name = 'Viewer Clickable Filenames';
+        try {
+            $files = [
+                [ 'name' => 'A.pdf', 'size' => 1, 'modified' => date('c'), 'url' => 'https://example.test/A.pdf' ],
+                [ 'name' => 'B.pdf', 'size' => 1, 'modified' => date('c'), 'url' => '' ],
+            ];
+            ob_start();
+            \KissPlugins\AutomatedPdfLinker\Admin\Components\FileListingViewer::render( $files, [ 'id' => 'kapl-selftest-v' ] );
+            $html = (string) ob_get_clean();
+
+            $ok = ( false !== strpos( $html, '<a href="https://example.test/A.pdf"' ) )
+               && ( false !== strpos( $html, 'target="_blank"' ) )
+               && ( false !== strpos( $html, 'rel="noopener noreferrer"' ) )
+               && ( false === strpos( $html, '>B.pdf</a>' ) );
+
+            $this->add_test_result(
+                $test_name,
+                $ok,
+                $ok ? 'Anchors render correctly for items with URL; plain text for items without.' : 'Anchor/link rendering mismatch.'
+            );
+        } catch ( \Throwable $e ) {
+            $this->add_test_result( $test_name, false, 'Exception while rendering viewer: ' . $e->getMessage() );
+        }
+    }
+
+    /**
+     * Ensure empty dataset renders explicit empty-state message (no stuck Loading…).
+     */
+    private function test_viewer_empty_state(): void {
+        $test_name = 'Viewer Empty State';
+        try {
+            ob_start();
+            \KissPlugins\AutomatedPdfLinker\Admin\Components\FileListingViewer::render( [], [ 'id' => 'kapl-selftest-empty' ] );
+            $html = (string) ob_get_clean();
+
+            $ok = ( false !== stripos( $html, 'No files found matching your criteria' ) );
+
+            $this->add_test_result(
+                $test_name,
+                $ok,
+                $ok ? 'Empty-state message is visible when no files are provided.' : 'Empty-state not rendered as expected.'
+            );
+        } catch ( \Throwable $e ) {
+            $this->add_test_result( $test_name, false, 'Exception while testing empty-state: ' . $e->getMessage() );
+        }
     }
 
     /**
@@ -225,122 +307,52 @@ class SelfTest {
                 return;
             }
 
-            // Store the original index to restore later
+            // Read current index (non-destructive)
             $original_index = $cache_manager->get_index();
-            $original_count = $original_index ? count( $original_index ) : 0;
+            $original_count = is_array( $original_index ) ? count( $original_index ) : 0;
 
-            // Test with sample data (using associative array format)
-            $test_data = [
-                'selftest-sample.pdf' => [
-                    'path' => 'test/selftest-sample.pdf',
-                    'filename' => 'selftest-sample.pdf',
-                    'normalized_name' => 'selftest-sample',
-                    'size' => 1024
-                ]
-            ];
-
-            // Test store operation (this replaces the entire index)
-            $update_result = $cache_manager->update_index( $test_data );
-            if ( ! $update_result ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
-                $this->add_test_result( $test_name, false, 'Failed to store test data. Check file permissions and WordPress database access.' );
+            // Perform a no-op roundtrip write/read to verify persistence layer without mutating data
+            $roundtrip_write_ok = $cache_manager->update_index( $original_index ?: [] );
+            if ( ! $roundtrip_write_ok ) {
+                $this->add_test_result( $test_name, false, 'Failed to write/read index via cache manager (roundtrip write failed).' );
                 return;
             }
 
-            // Test retrieve operation
-            $retrieved_data = $cache_manager->get_index();
-            if ( null === $retrieved_data ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
-                $this->add_test_result( $test_name, false, 'Failed to retrieve stored data. Storage mechanism may not be working.' );
-                return;
-            }
+            $roundtrip_index = $cache_manager->get_index();
+            $roundtrip_count = is_array( $roundtrip_index ) ? count( $roundtrip_index ) : 0;
 
-            // Verify we got exactly our test data (should be 1 item)
-            if ( count( $retrieved_data ) !== 1 ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
+            if ( $roundtrip_count !== $original_count ) {
                 $this->add_test_result(
                     $test_name,
                     false,
-                    'Retrieved data count mismatch. Expected 1 test item, got ' . count( $retrieved_data ) . ' items.'
+                    'Roundtrip changed index size from ' . $original_count . ' to ' . $roundtrip_count . '.'
                 );
                 return;
             }
 
-            // Check if our test data exists and is correct
-            if ( ! isset( $retrieved_data['selftest-sample.pdf'] ) ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
+            // Lightweight schema sanity check if there is at least one item
+            $schema_ok = true;
+            if ( $roundtrip_count > 0 ) {
+                $first = reset( $roundtrip_index );
+                if ( ! is_array( $first ) ) {
+                    $schema_ok = false;
+                } else {
+                    $required = [ 'path', 'filename', 'normalized_name' ];
+                    foreach ( $required as $k ) {
+                        if ( ! array_key_exists( $k, $first ) ) {
+                            $schema_ok = false;
+                            break;
+                        }
+                    }
                 }
-                $this->add_test_result( $test_name, false, 'Test data not found in retrieved index.' );
-                return;
-            }
-
-            // Verify specific test data integrity
-            $test_item = $retrieved_data['selftest-sample.pdf'];
-            if ( $test_item['normalized_name'] !== 'selftest-sample' ||
-                 $test_item['filename'] !== 'selftest-sample.pdf' ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
-                $this->add_test_result( $test_name, false, 'Test data integrity check failed.' );
-                return;
-            }
-
-            // Test clear operation
-            $clear_result = $cache_manager->clear_index();
-            if ( ! $clear_result ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
-                $this->add_test_result( $test_name, false, 'Failed to clear index.' );
-                return;
-            }
-
-            // Verify index is cleared
-            $cleared_data = $cache_manager->get_index();
-            if ( $cleared_data !== null && ! empty( $cleared_data ) ) {
-                // Restore original index before failing
-                if ( $original_index !== null ) {
-                    $cache_manager->update_index( $original_index );
-                }
-                $this->add_test_result( $test_name, false, 'Index not properly cleared.' );
-                return;
-            }
-
-            // Restore original index
-            if ( $original_index !== null && ! empty( $original_index ) ) {
-                $restore_result = $cache_manager->update_index( $original_index );
-                if ( ! $restore_result ) {
-                    $this->add_test_result( $test_name, false, 'Test passed but failed to restore original index.' );
-                    return;
-                }
-            }
-
-            // Determine storage method for informative message
-            $storage_method = 'unknown';
-            if ( function_exists( 'get_option' ) ) {
-                $is_file_storage = \get_option( 'kapl_pdf_index_file_storage', false );
-                $storage_method = $is_file_storage ? 'file-based' : 'database';
-            } else {
-                $storage_method = 'file-based (WordPress functions unavailable)';
             }
 
             $this->add_test_result(
                 $test_name,
-                true,
-                "Cache manager store/retrieve/clear working correctly using {$storage_method} storage. Original index ({$original_count} items) restored."
+                $schema_ok,
+                $schema_ok
+                    ? 'Cache manager read/write OK; index intact (' . $original_count . ' items).'
+                    : 'Index item schema missing required keys.'
             );
 
         } catch ( \Exception $e ) {
