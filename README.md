@@ -1,13 +1,12 @@
 # KISS Automated PDF Linker
 
-**Contributors:** (Your Name or Company)
-**Donate link:** <https://example.com/donate>
-**Tags:** pdf, shortcode, link, automatic, files, uploads, index, search, fuzzy
-**Requires at least:** 5.2
-**Tested up to:** 6.5
-**Requires PHP:** 7.4
-**Stable tag:** 2.0.0
-**License:** GPLv2 or later
+**Contributors:** KISS Plugins  
+**Tags:** pdf, shortcode, link, automatic, files, uploads, index, search, fuzzy  
+**Requires at least:** 5.2  
+**Tested up to:** 6.5  
+**Requires PHP:** 7.4  
+**Stable tag:** 2.0.0  
+**License:** GPLv2 or later  
 **License URI:** <https://www.gnu.org/licenses/gpl-2.0.html>
 
 Scans selected upload directories for PDF files and provides a shortcode `[kiss_pdf name="filename"]` to link to them using fuzzy matching.

@@ -1,0 +1,239 @@
+/**
+ * Admin Styles for KISS Automated PDF Linker
+ *
+ * @package KissPlugins\AutomatedPdfLinker
+ * @since 3.0.0
+ */
+
+/* Self-Test Results Styling */
+.kapl-selftest-results {
+    margin-top: 15px;
+}
+
+.kapl-test-summary {
+    margin-bottom: 20px;
+    padding: 10px;
+    border-left: 4px solid #46b450;
+    background: #f9f9f9;
+    border-radius: 3px;
+}
+
+.kapl-test-summary.has-failures {
+    border-left-color: #dc3232;
+}
+
+.kapl-test-details {
+    margin-bottom: 15px;
+}
+
+.kapl-test-result {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-left: 3px solid #46b450;
+    background: #f0f8f0;
+    border-radius: 3px;
+    font-size: 13px;
+}
+
+.kapl-test-result.failed {
+    border-left-color: #dc3232;
+    background: #fdf0f0;
+}
+
+.kapl-test-result strong {
+    color: #006600;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kapl-test-result.failed strong {
+    color: #cc0000;
+}
+
+.kapl-test-result .test-message {
+    font-size: 12px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Index Status Styling */
+.kapl-index-status {
+    margin-top: 15px;
+}
+
+.kapl-index-status details {
+    margin-top: 10px;
+}
+
+.kapl-index-status summary {
+    cursor: pointer;
+    font-weight: 600;
+    padding: 5px 0;
+}
+
+.kapl-index-status summary:hover {
+    color: #0073aa;
+}
+
+/* Button Styling */
+.kapl-test-button {
+    margin-right: 10px;
+}
+
+.kapl-folder-viewer {
+    margin-top: 15px;
+    color: #fff;
+}
+
+.kapl-folder-viewer__folder {
+    margin-bottom: 16px;
+    border: 1px solid #1e1e1e;
+    border-radius: 6px;
+    background: #000;
+    padding: 0 0 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+}
+
+.kapl-folder-viewer__folder > summary {
+    cursor: pointer;
+    font-weight: 600;
+    margin: 0 0 12px;
+    padding: 16px 20px;
+    background: #111;
+    border-bottom: 1px solid #1e1e1e;
+    color: #fff;
+}
+
+.kapl-folder-viewer__folder[open] > summary {
+    border-bottom-color: #2a2a2a;
+}
+
+.kapl-folder-viewer__table-wrapper {
+    padding: 0 20px 16px !important;
+    overflow-x: auto !important;
+}
+
+.kapl-folder-viewer__table {
+    width: 100%;
+    border-collapse: collapse;
+    background: transparent;
+    color: inherit;
+}
+
+.kapl-folder-viewer__table th,
+.kapl-folder-viewer__table td {
+    padding: 12px 16px !important;
+    border-bottom: 1px solid #1e1e1e !important;
+    text-align: left !important;
+    vertical-align: top !important;
+}
+
+.kapl-folder-viewer__table th {
+    font-weight: 600 !important;
+    background: #111 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 1 !important;
+}
+
+/* Column 1: File Name - Left aligned with left padding */
+.kapl-folder-viewer__table th:nth-child(1),
+.kapl-folder-viewer__table td:nth-child(1) {
+    width: 45% !important;
+    min-width: 250px !important;
+    padding: 12px 16px 12px 20px !important;
+}
+
+/* Column 2: Modified Date - Center column with balanced padding */
+.kapl-folder-viewer__table th:nth-child(2),
+.kapl-folder-viewer__table td:nth-child(2) {
+    width: 30% !important;
+    min-width: 180px !important;
+    padding: 12px 40px 12px 16px !important;
+}
+
+/* Column 3: File Size - Right aligned with extra left padding for spacing */
+.kapl-folder-viewer__table th:nth-child(3),
+.kapl-folder-viewer__table td:nth-child(3) {
+    width: 25% !important;
+    min-width: 120px !important;
+    text-align: right !important;
+    padding: 12px 20px 12px 40px !important;
+}
+
+.kapl-folder-viewer__table tr:last-child td {
+    border-bottom: none;
+}
+
+.kapl-folder-viewer__file a {
+    color: #5fb3ff;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.kapl-folder-viewer__file a:hover,
+.kapl-folder-viewer__file a:focus {
+    text-decoration: underline;
+}
+
+.kapl-folder-viewer__path {
+    display: block;
+    font-size: 12px;
+    color: #c5c5c5;
+    margin-top: 4px;
+}
+
+.kapl-folder-viewer__empty {
+    margin: 0;
+    color: #c5c5c5;
+    font-style: italic;
+    padding: 0 20px 12px;
+}
+
+/* Column-specific styling */
+.kapl-folder-viewer__filename {
+    word-break: break-word !important;
+}
+
+.kapl-folder-viewer__modified {
+    white-space: nowrap !important;
+    color: #a8a8a8 !important;
+    font-size: 13px !important;
+}
+
+.kapl-folder-viewer__size {
+    white-space: nowrap !important;
+    color: #a8a8a8 !important;
+    font-size: 13px !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 782px) {
+    .kapl-test-result {
+        padding: 10px;
+    }
+
+    .kapl-test-summary {
+        padding: 12px;
+    }
+}
+
+
+/* High-contrast total files summary for Folder Viewer */
+.kapl-folder-viewer__total{
+    margin: 8px 20px 12px;
+    padding: 6px 10px;
+    background: #111;
+    color: #fff;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+/* Row number prefix styling */
+.kapl-rownum{
+    color: #9ecbff;
+    font-weight: 700;
+    margin-right: 4px;
+}
